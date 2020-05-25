@@ -1030,6 +1030,10 @@ dynboun.c \
 electromagnetics.c \
 elemChecker.c \
 elementcpuload.c \
+exo.c \
+exoselect.c \
+exosetfind.c \
+exovector.c \
 expand.c \
 external.c \
 extrapol_dpelmain.c \
