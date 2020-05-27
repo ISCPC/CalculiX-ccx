@@ -27,7 +27,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 #include "CalculiX.h"
+#include "timelog.h"
 
 #ifdef CALCULIX_MPI
 ITG myid = 0, nproc = 0;
@@ -98,6 +100,9 @@ double *co=NULL, *xboun=NULL, *coefmpc=NULL, *xforc=NULL,*clearini=NULL,
 double fei[3],*xmodal=NULL,timepar[5],
   alpha[2]={0.,0.5},ttime=0.,qaold[2]={0.,0.},physcon[14]={0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
 
+char* env_solver;
+TIMELOG(tl);
+
 #ifdef CALCULIX_MPI
 MPI_Init(&argc, &argv) ;
 MPI_Comm_rank(MPI_COMM_WORLD, &myid) ;
@@ -159,6 +164,27 @@ kode=0;
 #else
  isolver=3;
 #endif
+
+env_solver = getenv("CCX_DEFAULT_SOLVER");
+if(env_solver)  {
+    if (strcmp(env_solver, "SPOOLES") == 0) {
+        isolver=0;
+    } else if (strcmp(env_solver, "ITERATIVESCALING") == 0) {
+        isolver=2;
+    } else if (strcmp(env_solver, "ITERATIVECHOLESKY") == 0) {
+        isolver=3;
+    } else if (strcmp(env_solver, "SGI") == 0) {
+        isolver=4;
+    } else if (strcmp(env_solver, "TAUS") == 0) {
+        isolver=5;
+    } else if (strcmp(env_solver, "PARDISO") == 0) {
+        isolver=7;
+    } else if (strcmp(env_solver, "HETEROSOLVER") == 0) {
+        isolver=11;
+    } else if (strcmp(env_solver, "CGONVE") == 0) {
+        isolver=12;
+    }
+}
 
  NNEW(ipoinp,ITG,2*nentries);
 
@@ -1105,6 +1131,7 @@ while(istat>=0) {
 	    FORTRAN(stop,());
 	}
 
+    TIMELOG_START(tl);
 	linstatic(co,&nk,&kon,&ipkon,&lakon,&ne,nodeboun,ndirboun,xboun,&nboun, 
 	     ipompc,nodempc,coefmpc,labmpc,&nmpc,nodeforc,ndirforc,xforc,
              &nforc, nelemload,sideload,xload,&nload, 
@@ -1122,6 +1149,7 @@ while(istat>=0) {
 	     xbodyold,timepar,thicke,jobnamec,tieset,&ntie,&istep,&nmat,
 	     ielprop,prop,typeboun,&mortar,mpcinfo,tietol,ics,&icontact,
 	     orname,itempuser);
+    TIMELOG_END(tl, "linstatic");
 
 	for(i=0;i<3;i++){nzsprevstep[i]=nzs[i];}
 
@@ -1135,6 +1163,7 @@ while(istat>=0) {
 	mpcinfo[0]=memmpc_;mpcinfo[1]=mpcfree;mpcinfo[2]=icascade;
 	mpcinfo[3]=maxlenmpc;
 
+    TIMELOG_START(tl);
 	nonlingeo(&co,&nk,&kon,&ipkon,&lakon,&ne,nodeboun,ndirboun,xboun,&nboun, 
 	     &ipompc,&nodempc,&coefmpc,&labmpc,&nmpc,nodeforc,ndirforc,xforc,
              &nforc,&nelemload,&sideload,xload,&nload, 
@@ -1159,6 +1188,7 @@ while(istat>=0) {
 	     &ifacecount,typeboun,&islavsurf,&pslavsurf,&clearini,&nmat,
 	     xmodal,&iaxial,&inext,&nprop,&network,orname,vel,&nef,
 	     velo,veloo,energy,itempuser);
+    TIMELOG_END(tl, "nonlingeo");
 
 	memmpc_=mpcinfo[0];mpcfree=mpcinfo[1];icascade=mpcinfo[2];
         maxlenmpc=mpcinfo[3];

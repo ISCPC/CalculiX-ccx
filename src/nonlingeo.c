@@ -18,6 +18,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <errno.h>
 #include "CalculiX.h"
 #include "mortar.h"
 #ifdef SPOOLES
@@ -32,8 +35,214 @@
 #ifdef PARDISO
    #include "pardiso.h"
 #endif
+#include "timelog.h"
 
 #define max(a,b) ((a) >= (b) ? (a) : (b))
+
+/*
+ * request queue for interpolate_server
+ */
+#define INTERPOLATE_QSZ    0x100000     // 64k entries (=256KB)
+struct interpolate_queue {
+    int entries[INTERPOLATE_QSZ];
+    unsigned int wp;
+    unsigned int rp;
+    pthread_mutex_t lock;
+    pthread_cond_t wp_cv;
+    pthread_cond_t rp_cv;
+};
+
+void interpolate_queue_init(struct interpolate_queue *q) {
+    q->wp = 0;
+    q->rp = 0;
+    pthread_mutex_init(&(q->lock), NULL);
+    pthread_cond_init(&(q->wp_cv), NULL);
+    pthread_cond_init(&(q->rp_cv), NULL);
+}
+
+inline void enqueue_request(struct interpolate_queue *q, int i) {
+    unsigned int next_wp;
+
+    pthread_mutex_lock(&(q->lock));
+    next_wp = (q->wp+1) & (INTERPOLATE_QSZ-1);
+    while (next_wp == q->rp) {
+        pthread_cond_wait(&(q->wp_cv), &(q->lock));
+    }
+    q->entries[q->wp] = i;
+    q->wp = next_wp;
+    pthread_cond_signal(&(q->rp_cv));
+    pthread_mutex_unlock(&(q->lock));
+}
+
+inline int dequeue_request(struct interpolate_queue *q) {
+    int i;
+
+    pthread_mutex_lock(&(q->lock));
+    while (q->wp == q->rp) {
+        pthread_cond_wait(&(q->rp_cv), &(q->lock));
+    }
+    i = q->entries[q->rp];
+    q->rp = (q->rp+1) & (INTERPOLATE_QSZ-1);
+    pthread_cond_signal(&(q->wp_cv));
+    pthread_mutex_unlock(&(q->lock));
+    return i;
+}
+
+typedef struct interpolatestate_param {
+    ITG    mode;
+    ITG    ne0;
+    ITG    *nstate_;
+    ITG    *mi;
+    ITG    *islavsurf;
+    ITG    *islavsurfold;
+    double *xstate;
+    double *xstateini;
+    double *pslavsurf;
+    double *pslavsurfold;
+    struct interpolate_queue *queue;
+} interpolatestate_param_t;
+
+void *interpolate_server(interpolatestate_param_t *params) {
+    int kk, numpts, ne0, mode;
+    int ncalls=0;
+    float elaps, overall=0.0, maxelaps=0.0;
+    TIMELOG(tl1);
+    TIMELOG(tl2);
+
+    ne0 = params->ne0;
+    mode = params->mode;
+    kk = dequeue_request(params->queue);
+
+    
+    TIMELOG_START(tl1);
+    while(kk > 0) {
+        numpts = params->islavsurfold[kk*2+1] - params->islavsurfold[kk*2-1];
+
+        TIMELOG_START(tl2);
+        FORTRAN(interpolateinface, (&kk, params->xstate, params->xstateini, &numpts,
+            params->nstate_, params->mi, params->islavsurf, params->pslavsurf, &ne0,
+            params->islavsurfold, params->pslavsurfold, &mode));
+        TIMELOG_GETTIME(elaps, tl2);
+        if (elaps > maxelaps) {
+            maxelaps = elaps;
+        }
+        ncalls++;
+
+        kk = dequeue_request(params->queue);
+    }
+    TIMELOG_GETTIME(overall, tl1);
+
+    printf("interpolate_server(mode=%d): %d calls, overall: %f max: %f)\n", mode, ncalls, overall, maxelaps);
+    return NULL;
+}
+
+#define MAX_NUM_CPUS 32
+
+void interpolatestate(ITG *ne, ITG *ipkon, ITG *kon, char *lakon,
+    ITG ne0, ITG *mi, double *xstate, double *pslavsurf, ITG *nstate_,
+    double *xstateini, ITG *islavsurf, ITG *islavsurfold,
+    double *pslavsurfold, char *tieset, ITG ntie, ITG *itiefac) {
+    int i;
+    int kk, numpts, ncalls=0;
+    int num_cpus=getSystemCPUs(), mode=0;
+    char *envloc;
+    float overall=0.0, elaps, maxelaps=0.0;
+    TIMELOG(tl1);
+    TIMELOG(tl2);
+
+    pthread_t tid[MAX_NUM_CPUS];
+    interpolatestate_param_t params;
+
+    envloc = getenv("CCX_NPROC_INTERPOLATE");
+    if(envloc)  {
+        num_cpus = atoi(envloc);
+        if(num_cpus <= 0) {
+            num_cpus = 1;
+        } else if(num_cpus > MAX_NUM_CPUS) {
+            num_cpus = MAX_NUM_CPUS;
+        }
+        if (num_cpus > 1) {
+        }
+    }
+
+    envloc = getenv("CCX_INTERPOLATE_MODE");
+    if(envloc)  {
+        mode = atoi(envloc);
+        mode = ((mode > 0)&&(mode <= 2)) ? mode : 0;
+    }
+
+    if (num_cpus > 1) {
+        // create server threads
+        params.mode = mode;
+        params.ne0 = ne0;
+        params.xstate = xstate;
+        params.xstateini = xstateini;
+        params.nstate_ = nstate_;
+        params.mi = mi;
+        params.islavsurf = islavsurf;
+        params.pslavsurf = pslavsurf;
+        params.islavsurfold = islavsurfold;
+        params.pslavsurfold = pslavsurfold;
+        params.queue = (struct interpolate_queue*)malloc(sizeof(struct interpolate_queue));
+        interpolate_queue_init(params.queue);
+
+        for(i=0; i<num_cpus; i++) {
+            pthread_create(&tid[i], NULL, (void *)interpolate_server, (void *)&params);
+        }
+
+        // distribution
+        for (i=0; i<ntie; i++) {
+            if(tieset[i*243+80] != 'C') continue;
+
+            printf("interpolateinface(%d cpus): itiefac[%d,%d],islavsurf[%d,%d],islavsurfold[%d,%d]\n",
+                num_cpus, itiefac[i*2], itiefac[i*2+1],
+                islavsurf[itiefac[i*2]*2-1], islavsurf[itiefac[i*2+1]*2+1],
+                islavsurfold[itiefac[i*2]*2-1], islavsurfold[itiefac[i*2+1]*2+1]);
+            //fflush(stdout);
+
+            for(kk=itiefac[i*2]; kk<=itiefac[i*2+1]; kk++) {
+                numpts = islavsurfold[kk*2+1] - islavsurfold[kk*2-1];
+                if(numpts > 2) {
+                    enqueue_request(params.queue, kk);
+                }
+            }
+        }
+
+        // Wait for finishing threads
+        for(i=0; i<num_cpus; i++) enqueue_request(params.queue, -1);
+        for(i=0; i<num_cpus; i++) pthread_join(tid[i], NULL);
+        free(params.queue);
+    } else {
+        for (i=0; i<ntie; i++) {
+            if(tieset[i*243+80] != 'C') continue;
+
+            ncalls=0;
+            maxelaps=0.0;
+            TIMELOG_START(tl1);
+            for(kk=itiefac[i*2]; kk<=itiefac[i*2+1]; kk++) {
+                numpts = islavsurfold[kk*2+1] - islavsurfold[kk*2-1];
+                if(numpts > 2) {
+                    TIMELOG_START(tl2);
+                    FORTRAN(interpolateinface, (&kk, xstate, xstateini, &numpts,
+                        nstate_, mi, islavsurf, pslavsurf, &ne0, islavsurfold, pslavsurfold, &mode));
+                    TIMELOG_GETTIME(elaps, tl2);
+                    if (elaps > maxelaps) {
+                        maxelaps = elaps;
+                    }
+                    ncalls++;
+                }
+            }
+            TIMELOG_GETTIME(overall, tl1);
+
+            printf("interpolateinface(mode=%d): itiefac[%d,%d],islavsurf[%d,%d],islavsurfold[%d,%d] (%d/%d) overall(%f, %f)\n",
+                mode, itiefac[i*2], itiefac[i*2+1],
+                islavsurf[itiefac[i*2]*2-1], islavsurf[itiefac[i*2+1]*2+1],
+                islavsurfold[itiefac[i*2]*2-1], islavsurfold[itiefac[i*2+1]*2+1],
+                ncalls, itiefac[i*2+1]-itiefac[i*2]+1,
+                overall, maxelaps);
+        }
+    }
+}
 
 void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	     ITG *ne, 
@@ -159,6 +368,10 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
          *smscale=NULL,dtset,energym=0.,energymold=0.;
 	 
   FILE *f1;
+
+  TIMELOG(tl1);
+  TIMELOG(tl2);
+  TIMELOG(tl3);
 
   if(filab[4]!=' ') ne1d2d=1;
 
@@ -1039,6 +1252,8 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	  for(k=0;k<nzs[0];++k){
 	      au[k]=aub[k]+scal1*au[k];
 	  }
+
+      TIMELOG_START(tl3);
 	  if(*isolver==0){
 #ifdef SPOOLES
 	      spooles(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0],
@@ -1077,6 +1292,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	      FORTRAN(stop,());
 #endif
 	  }
+      TIMELOG_END(tl3, "solver1 for nonlingeo");
       }
       
       else{
@@ -1258,7 +1474,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
   }
   
   while((1.-theta>1.e-6)||(negpres==1)){
-      
+      TIMELOG_START(tl1);    
       if(icutb==0){
 	  
 	  /* previous increment converged: update the initial values */
@@ -1587,6 +1803,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 
                   /* interpolating the state variables */
 
+          TIMELOG_START(tl3);
 		  if(*nstate_!=0){
 		      if(maxprevcontel!=0){
 			  RENEW(xstateini,double,
@@ -1610,12 +1827,18 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 		      if((*nintpoint>0)&&(maxprevcontel>0)){
 			  
 			  /* interpolation of xstate */
-			  
+#if 0			  
 			  FORTRAN(interpolatestate,(ne,ipkon,kon,lakon,
                                &ne0,mi,xstate,pslavsurf,nstate_,
                                xstateini,islavsurf,islavsurfold,
 			       pslavsurfold,tieset,ntie,itiefac));
 			  
+#else
+              interpolatestate(ne,ipkon,kon,lakon,
+                   ne0,mi,xstate,pslavsurf,nstate_,
+                   xstateini,islavsurf,islavsurfold,
+                   pslavsurfold,tieset,*ntie,itiefac);
+#endif
 		      }
 
 		      if(maxprevcontel!=0){
@@ -1631,6 +1854,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 			  xstateini[k]=xstate[k];
 			  }*/
 		  }
+          TIMELOG_END(tl3, "interpolatestate");
 
 	      }
 	  }
@@ -1924,7 +2148,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
     }
 
     while(icntrl==0){
-
+      TIMELOG_START(tl2);
 #ifdef COMPANY
 	  FORTRAN(uiter,(&iit));
 #endif	  
@@ -2584,7 +2808,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
       
 	  //for(j=0;j<452;j++){printf("nonlingeo.c %d au=%f, irow=%d\n",j,au[j],irow[j]);}
 
-      
+      TIMELOG_START(tl3); 
 	  if(*isolver==0){
 #ifdef SPOOLES
 	      if(*ithermal<2){
@@ -2699,6 +2923,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	      FORTRAN(stop,());
 #endif
 	  }
+      TIMELOG_END(tl3, "solver2 for nonlingeo");
 	  
 	  if(*mortar<=1){
 	      if(isensitivity){
@@ -3171,7 +3396,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	  }
 	  iflagact=0;
       }
-      
+      TIMELOG_END(tl2, "iteration Loop");
     }
 
     if(*nmethod!=4)SFREE(resold);
@@ -3509,7 +3734,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
       if(strcmp1(&filab[2175],"CONT")==0) SFREE(cdn);
       if(strcmp1(&filab[2697],"ME  ")==0) SFREE(emn);
    }
-    
+   TIMELOG_END(tl1, "Increment Loop"); 
   }
 
   /*********************************************************/

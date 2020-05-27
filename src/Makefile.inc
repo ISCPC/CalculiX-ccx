@@ -33,6 +33,8 @@ approxplane.f \
 assigndomtonodes.f \
 attach_1d.f \
 attach_2d.f \
+attach_2d_3.f \
+attach_2d_3s.f \
 attach_3d.f \
 attachline.f \
 autocovmatrix.f \
@@ -1067,6 +1069,7 @@ strsplt.c \
 tau.c \
 thicknessmain.c \
 tiedcontact.c \
+timelog.c \
 trafontmortar2.c \
 trafontspcmpc.c \
 transformspcsmpcs_quad.c \

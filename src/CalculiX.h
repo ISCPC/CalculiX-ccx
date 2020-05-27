@@ -2308,6 +2308,10 @@ void FORTRAN(interpolatestate,(ITG *ne,ITG *ipkon,ITG *kon,char *lakon,
              ITG *islavsurf,ITG *islavsurfold,
              double *pslavsurfold,char *tieset,ITG *ntie,ITG *itiefac));
 
+void FORTRAN(interpolateinface,(ITG *kk,double *xstate,double *xstateini,
+             ITG *numpts,ITG *nstate_,ITG *mi,ITG *islavsurf,double *pslavsurf,
+             ITG *ne0,ITG *islavsurfold,double *pslavsurfold,ITG *mode));
+
 void interpolcycsymcfd(int *nkold,double *cotet,int *neold,int *ipkon,
      int *kon,int **nodempcp,int *ipompc,int *nmpc,
      int *ikmpc,int *ilmpc,double **coefmpcp,char *labmpc,

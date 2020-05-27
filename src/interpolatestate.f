@@ -48,7 +48,7 @@
             if(numpts.gt.2) then
                call interpolateinface(kk,xstate,xstateini,numpts,
      &              nstate_,mi,islavsurf,pslavsurf,
-     &              ne0,islavsurfold,pslavsurfold)
+     &              ne0,islavsurfold,pslavsurfold,0)
             endif
          enddo
       enddo

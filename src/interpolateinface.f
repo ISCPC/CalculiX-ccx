@@ -27,7 +27,7 @@
 !
       subroutine interpolateinface(kk,xstate,xstateini,numpts,nstate_,
      &   mi,islavsurf,pslavsurf,
-     &   ne0,islavsurfold,pslavsurfold)
+     &   ne0,islavsurfold,pslavsurfold,mode)
 !
       implicit none
 !
@@ -38,7 +38,7 @@
      &  ifaceq(8,6),ip(numpts),ne0,itrinew,ntriangle,
      &  ifacet(6,4),ifacew1(4,5),ifacew2(8,5),n,islavsurf(2,*),
      &  ibin(numpts),ivert1,ntriangle_,nterms,m,islavsurfold(2,*),
-     &  nx(2*numpts+1),ny(2*numpts+1),isol,id
+     &  nx(2*numpts+1),ny(2*numpts+1),isol,id,mode
 !
       real*8 xstate(nstate_,mi(1),*),p(3),pslavsurfold(3,*),
      &  xstateini(nstate_,mi(1),*),coi(2,numpts+3),pneigh(3,3),
@@ -209,9 +209,15 @@ c     write(*,*) '**regular solution'
                pneigh(3,k)=0.d0
             enddo
             p(3)=0.d0
-            nterms=3
 !
-            call attach_2d(pneigh,p,nterms,ratio,dist,xil,etl)
+            if(mode.eq.2) then
+               call attach_2d_3s(pneigh,p,ratio,dist,xil,etl)
+            elseif(mode.eq.1) then
+               call attach_2d_3(pneigh,p,ratio,dist,xil,etl)
+            else
+               nterms=3
+               call attach_2d(pneigh,p,nterms,ratio,dist,xil,etl)
+            endif
 !
             do m=1,2
                p(m)=0.d0
