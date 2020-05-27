@@ -31,6 +31,10 @@
 #ifdef PARDISO
    #include "pardiso.h"
 #endif
+#ifdef AURORA
+   #include "aurora.h"
+#endif
+#include "timelog.h"
 
 void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	     ITG *ne, 
@@ -102,6 +106,8 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
          *fnext=NULL,*energyini=NULL,*energy=NULL,*d=NULL,alea=0.1,*smscale=NULL;
 
   FILE *f1,*f2;
+
+  TIMELOG(tl);
   
 #ifdef SGI
   ITG token;
@@ -525,6 +531,29 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	      FORTRAN(stop,());
 #endif
 	  }
+	  else if(*isolver==11){
+#ifdef AURORA
+          aurora_hs_factor(ad,au,adb,aub,&sigma,icol,irow,neq,nzs);
+#else
+	      printf("*ERROR in linstatic: the HeteroSolver library is not linked\n\n");
+	      FORTRAN(stop,());
+#endif
+	  }
+	  else if(*isolver==12){
+#ifdef AURORA
+#ifdef PARDISO
+	      printf("INFO: CG/VE is not support factorizing. Use PARDISO solver for now.\n\n");
+	      pardiso_factor(ad,au,adb,aub,&sigma,icol,irow,neq,nzs,
+			     &symmetryflag,&inputformat,jq,&nzs[2]);
+#else
+	      printf("*ERROR in linstatic: the CG/VE library is not linked\n\n");
+	      FORTRAN(stop,());
+#endif
+#else
+	      printf("*ERROR in linstatic: the CG/VE library is not linked\n\n");
+	      FORTRAN(stop,());
+#endif
+	  }
       }
 
     /* solving the system of equations with appropriate rhs */
@@ -556,6 +585,18 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 		      pardiso_solve(b,neq,&symmetryflag,&nrhs);
 #endif
 		      
+		  }
+		  else if(*isolver==11){
+#ifdef AURORA
+		      aurora_hs_solve(b);
+#endif
+		  }
+		  else if(*isolver==12){
+#ifdef AURORA
+#ifdef PARDISO
+		      pardiso_solve(b,neq,&symmetryflag,&nrhs);
+#endif
+#endif
 		  }
 	      }
 	      
@@ -747,6 +788,18 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 		      
 		  }
+		  else if(*isolver==11){
+#ifdef AURORA
+		      aurora_hs_solve(b);
+#endif
+		  }
+		  else if(*isolver==12){
+#ifdef AURORA
+#ifdef PARDISO
+		      pardiso_solve(b,neq,&symmetryflag,&nrhs);
+#endif
+#endif
+		  }
 	      }
 	      
 	      /* storing the Green function */
@@ -864,6 +917,7 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 
     /* linear static applications */
 
+    TIMELOG_START(tl);
     if(*isolver==0){
 #ifdef SPOOLES
       spooles(ad,au,adb,aub,&sigma,b,icol,irow,neq,nzs,&symmetryflag,
@@ -914,6 +968,32 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
             FORTRAN(stop,());
 #endif
     }
+    else if(*isolver==11){
+#ifdef AURORA
+      if(nasym>0){
+     printf(" *ERROR in linstatic: the current HeteroSolver cannot be used for asymmetric matrices\n\n");
+     FORTRAN(stop,());
+      }
+      aurora_hs_main(ad,au,adb,aub,&sigma,b,icol,irow,neq,nzs);
+#else
+            printf("*ERROR in linstatic: the HeterSolver library is not linked\n\n");
+            FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==12){
+#ifdef AURORA
+      if(nasym>0){
+     printf(" *ERROR in linstatic: the current CG/VE cannot be used for asymmetric matrices\n\n");
+     FORTRAN(stop,());
+      }
+      aurora_cg_main(ad,au,adb,aub,&sigma,b,icol,irow,neq,nzs);
+#else
+            printf("*ERROR in linstatic: the CG/VE library is not linked\n\n");
+            FORTRAN(stop,());
+#endif
+    }
+    TIMELOG_END(tl, "solver for linstatic");
+
 
     /* saving of ad and au for sensitivity analysis */
 

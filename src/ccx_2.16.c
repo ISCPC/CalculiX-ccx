@@ -30,6 +30,9 @@
 #include <sys/time.h>
 #include "CalculiX.h"
 #include "timelog.h"
+#ifdef AURORA
+#include "aurora.h"
+#endif
 
 #ifdef CALCULIX_MPI
 ITG myid = 0, nproc = 0;
@@ -108,6 +111,12 @@ MPI_Init(&argc, &argv) ;
 MPI_Comm_rank(MPI_COMM_WORLD, &myid) ;
 MPI_Comm_size(MPI_COMM_WORLD, &nproc) ;
 #endif
+
+#ifdef AURORA
+    if (aurora_init() < 0) {
+       FORTRAN(stop,());
+    };
+#endif /* AURORA */
 
 if(argc==1){printf("Usage: CalculiX.exe -i jobname\n");FORTRAN(stop,());}
 else{
@@ -1206,6 +1215,7 @@ while(istat>=0) {
 	  mpcinfo[0]=memmpc_;mpcinfo[1]=mpcfree;mpcinfo[2]=icascade;
 	  mpcinfo[3]=maxlenmpc;
 	  
+      TIMELOG_START(tl);
 	  arpack(co,&nk,&kon,&ipkon,&lakon,&ne,nodeboun,ndirboun,xboun,&nboun, 
 	     ipompc,nodempc,coefmpc,labmpc,&nmpc,nodeforc,ndirforc,xforc,
              &nforc, nelemload,sideload,xload,&nload, 
@@ -1223,6 +1233,7 @@ while(istat>=0) {
 	     &ntie,&istep,&mcs,ics,tieset,cs,&nintpoint,&mortar,&ifacecount,
 	     &islavsurf,&pslavsurf,&clearini,&nmat,typeboun,ielprop,prop,
              orname);
+      TIMELOG_END(tl, "arpack");
 
 	  memmpc_=mpcinfo[0];mpcfree=mpcinfo[1];icascade=mpcinfo[2];
 	  maxlenmpc=mpcinfo[3];
@@ -1241,6 +1252,7 @@ while(istat>=0) {
 	  mpcinfo[0]=memmpc_;mpcinfo[1]=mpcfree;mpcinfo[2]=icascade;
 	  mpcinfo[3]=maxlenmpc;
 	  
+      TIMELOG_START(tl);
 	  arpackcs(co,&nk,&kon,&ipkon,&lakon,&ne,nodeboun,ndirboun,
              xboun,&nboun, 
 	     ipompc,nodempc,coefmpc,labmpc,&nmpc,nodeforc,ndirforc,xforc,
@@ -1258,6 +1270,7 @@ while(istat>=0) {
              ibody,xbody,&nbody,&nevtot,thicke,&nslavs,tietol,mpcinfo,
 	     &ntie,&istep,tieset,&nintpoint,&mortar,&ifacecount,&islavsurf,
 	     &pslavsurf,&clearini,&nmat,typeboun,ielprop,prop,orname);
+      TIMELOG_END(tl, "arpackcs");
 
 	  memmpc_=mpcinfo[0];mpcfree=mpcinfo[1];icascade=mpcinfo[2];
 	  maxlenmpc=mpcinfo[3];
@@ -1273,6 +1286,7 @@ while(istat>=0) {
   }else if(nmethod==3){
     
 #ifdef ARPACK
+    TIMELOG_START(tl);
 	arpackbu(co,&nk,kon,ipkon,lakon,&ne,nodeboun,ndirboun,xboun,&nboun, 
 	     ipompc,nodempc,coefmpc,labmpc,&nmpc,nodeforc,ndirforc,xforc,
              &nforc, 
@@ -1288,6 +1302,7 @@ while(istat>=0) {
              prset,&nener,&isolver,trab,inotr,&ntrans,&ttime,fmpc,cbody,
 	     ibody,xbody,&nbody,thicke,jobnamec,&nmat,ielprop,prop,
 	     orname,typeboun);
+    TIMELOG_END(tl, "arpackbu");
 #else
             printf("*ERROR in CalculiX: the ARPACK library is not linked\n\n");
             FORTRAN(stop,());
@@ -1304,6 +1319,7 @@ while(istat>=0) {
 
       printf(" Composing the dynamic response from the eigenmodes\n\n");
 
+      TIMELOG_START(tl);
       dyna(&co,&nk,&kon,&ipkon,&lakon,&ne,&nodeboun,&ndirboun,&xboun,&nboun,
 	    &ipompc,&nodempc,&coefmpc,&labmpc,&nmpc,nodeforc,ndirforc,xforc,&nforc,
 	    nelemload,sideload,xload,&nload,
@@ -1322,6 +1338,7 @@ while(istat>=0) {
             xbodyold,&istep,&isolver,jq,output,&mcs,&nkon,&mpcend,ics,cs,
 	    &ntie,tieset,&idrct,jmax,ctrl,&itpamp,tietol,&nalset,
 	    ikforc,ilforc,thicke,&nslavs,&nmat,typeboun,ielprop,prop,orname);
+      TIMELOG_END(tl, "dyna");
     }
   else if(nmethod==5)
     {
@@ -1334,6 +1351,7 @@ while(istat>=0) {
 
       printf(" Composing the steady state response from the eigenmodes\n\n");
 
+      TIMELOG_START(tl);
       steadystate(&co,&nk,&kon,&ipkon,&lakon,&ne,&nodeboun,&ndirboun,&xboun,&nboun,
 	    &ipompc,&nodempc,&coefmpc,&labmpc,&nmpc,nodeforc,ndirforc,xforc,&nforc,
 	    nelemload,sideload,xload,&nload,
@@ -1352,12 +1370,14 @@ while(istat>=0) {
 	    xbodyold,&istep,&isolver,jq,output,&mcs,&nkon,ics,cs,&mpcend,
 	    ctrl,ikforc,ilforc,thicke,&nmat,typeboun,ielprop,prop,orname,
 	    &ndamp,dacon);
+      TIMELOG_END(tl, "steadystate");
     }
   else if((nmethod==6)||(nmethod==7))
     {
 
       printf(" Composing the complex eigenmodes from the real eigenmodes\n\n");
 
+      TIMELOG_START(tl);
       complexfreq(&co,&nk,&kon,&ipkon,&lakon,&ne,&nodeboun,&ndirboun,&xboun,&nboun,
 	    &ipompc,&nodempc,&coefmpc,&labmpc,&nmpc,nodeforc,ndirforc,xforc,&nforc,
 	    nelemload,sideload,xload,&nload,
@@ -1377,12 +1397,14 @@ while(istat>=0) {
 	    &ntie,tieset,&idrct,jmax,ctrl,&itpamp,tietol,&nalset,
 	    ikforc,ilforc,thicke,jobnamef,mei,&nmat,ielprop,prop,orname,
             typeboun);
+      TIMELOG_END(tl, "complexfreq");
     }
   else if((nmethod>7)&&(nmethod<12)){
 
 	mpcinfo[0]=memmpc_;mpcinfo[1]=mpcfree;mpcinfo[2]=icascade;
 	mpcinfo[3]=maxlenmpc;
 
+    TIMELOG_START(tl);
 	electromagnetics(&co,&nk,&kon,&ipkon,&lakon,&ne,nodeboun,
              ndirboun,xboun,&nboun, 
 	     &ipompc,&nodempc,&coefmpc,&labmpc,&nmpc,nodeforc,ndirforc,xforc,
@@ -1406,13 +1428,15 @@ while(istat>=0) {
 	     &ntie,&tieset,&itpamp,&iviewfile,jobnamec,&tietol,&nslavs,thicke,
 	     ics,&nalset,&nmpc_,&nmat,typeboun,&iaxial,&nload_,&nprop,
 	     &network,orname);
+    TIMELOG_END(tl, "electromagnetics");
 
 	memmpc_=mpcinfo[0];mpcfree=mpcinfo[1];icascade=mpcinfo[2];
         maxlenmpc=mpcinfo[3];
   }
 
   else if(nmethod==12){
-  
+
+    TIMELOG_START(tl);  
 	sensitivity(co,&nk,&kon,&ipkon,&lakon,&ne,nodeboun,ndirboun,
 	     xboun,&nboun, ipompc,nodempc,coefmpc,labmpc,&nmpc,nodeforc,
              ndirforc,xforc,&nforc, nelemload,sideload,xload,&nload, 
@@ -1431,6 +1455,7 @@ while(istat>=0) {
 	     ielprop,prop,typeboun,&mortar,mpcinfo,tietol,ics,&icontact,
 	     &nobject,&objectset,&istat,orname,nzsprevstep,&nlabel,physcon,
 	     jobnamef,iponor,knor,&ne2d,iponoel,inoel,&mpcend);
+    TIMELOG_END(tl, "sensitivity");
   }
 
   SFREE(nactdof);SFREE(icol);SFREE(jq);SFREE(irow);
@@ -1636,6 +1661,10 @@ SFREE(islavsurf);
 if(mortar==1){SFREE(pslavsurf);SFREE(clearini);}
 
 if(nobject_>0){SFREE(objectset);}
+
+#ifdef AURORA
+  aurora_fini();
+#endif
 
 #ifdef CALCULIX_MPI
 MPI_Finalize();

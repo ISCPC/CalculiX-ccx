@@ -887,6 +887,7 @@ add_rect.c \
 arpack.c \
 arpackbu.c \
 arpackcs.c \
+aurora.c \
 bdfill.c \
 biosav.c \
 buildtquad.c \
