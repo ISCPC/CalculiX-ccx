@@ -31,6 +31,8 @@
 !             4: sgi solver
 !             5: TAUCS
 !             7: pardiso
+!            11: HeteroSolver on SX-Aurora VE
+!            12: CG solver on SX-Aurora VE
 !
 !      iexpl==0:  structure:implicit, fluid:incompressible
 !
@@ -99,6 +101,10 @@ c      enddo
          solver(1:5)='TAUCS'
       elseif(isolver.eq.7) then
          solver(1:7)='PARDISO'
+      elseif(isolver.eq.11) then
+         solver(1:12)='HETEROSOLVER'
+      elseif(isolver.eq.12) then
+         solver(1:6)='CGONVE'
       endif
 !
       do i=2,n
@@ -133,6 +139,10 @@ c      enddo
          isolver=5
       elseif(solver(1:7).eq.'PARDISO') then
          isolver=7
+      elseif(solver(1:12).eq.'HETEROSOLVER') then
+         isolver=11
+      elseif(solver(1:6).eq.'CGONVE') then
+         isolver=12
       else
          write(*,*) '*WARNING reading *STATIC: unknown solver;'
          write(*,*) '         the default solver is used'
