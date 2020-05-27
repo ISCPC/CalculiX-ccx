@@ -4111,7 +4111,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
       }
       else if(*isolver==11){
 #ifdef AURORA
-	pardiso_hs_cleanup();
+	aurora_hs_cleanup();
 #endif
       }
       else if(*isolver==12){
