@@ -147,7 +147,7 @@ void interpolatestate(ITG *ne, ITG *ipkon, ITG *kon, char *lakon,
     double *pslavsurfold, char *tieset, ITG ntie, ITG *itiefac) {
     int i;
     int kk, numpts, ncalls=0;
-    int num_cpus=getSystemCPUs(), mode=0;
+    int num_cpus=1, mode=0;
     char *envloc;
     float overall=0.0, elaps, maxelaps=0.0;
     TIMELOG(tl1);
@@ -156,22 +156,25 @@ void interpolatestate(ITG *ne, ITG *ipkon, ITG *kon, char *lakon,
     pthread_t tid[MAX_NUM_CPUS];
     interpolatestate_param_t params;
 
-    envloc = getenv("CCX_NPROC_INTERPOLATE");
+    envloc = getenv("CCX_INTERPOLATE_MODE");
     if(envloc)  {
-        num_cpus = atoi(envloc);
+        mode = atoi(envloc);
+        mode = ((mode > 0)&&(mode <= 2)) ? mode : 0;
+    }
+
+    if (mode > 0) {
+        envloc = getenv("CCX_NPROC_INTERPOLATE");
+        if(envloc)  {
+            num_cpus = atoi(envloc);
+        } else {
+            num_cpus = getSystemCPUs();
+        }
+
         if(num_cpus <= 0) {
             num_cpus = 1;
         } else if(num_cpus > MAX_NUM_CPUS) {
             num_cpus = MAX_NUM_CPUS;
         }
-        if (num_cpus > 1) {
-        }
-    }
-
-    envloc = getenv("CCX_INTERPOLATE_MODE");
-    if(envloc)  {
-        mode = atoi(envloc);
-        mode = ((mode > 0)&&(mode <= 2)) ? mode : 0;
     }
 
     if (num_cpus > 1) {
