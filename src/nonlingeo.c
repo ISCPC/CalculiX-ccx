@@ -3148,11 +3148,13 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	      dthetaref=dtheta;
 	  }*/
 
+#if 0  /* disable for compatibility of *.dat output to the original*/
       /* Only write a result file every 1000 increments (until
          such time as time points can be fixed) */
       if((iinc/1000)*1000!=iinc){
         jprint = 0;
       }
+#endif
 
 	  theta=theta+dtheta;  
 	  if(dtheta>=1.-theta){
@@ -3162,8 +3164,10 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	      }
 	      dtheta=1.-theta;
 	      dthetaref=dtheta;
+#if 0  /* disable for compatibility of *.dat output to the original*/
           // Ensure the result is saved
           jprint = 1;
+#endif
 	  }
 	  iflagact=0;
       }
