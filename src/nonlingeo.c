@@ -167,7 +167,12 @@ void interpolatestate(ITG *ne, ITG *ipkon, ITG *kon, char *lakon,
         if(envloc)  {
             num_cpus = atoi(envloc);
         } else {
-            num_cpus = getSystemCPUs();
+            envloc = getenv("OMP_NUM_THREADS");
+            if(envloc)  {
+                num_cpus = atoi(envloc);
+            } else {
+                num_cpus = getSystemCPUs();
+            }
         }
 
         if(num_cpus <= 0) {
