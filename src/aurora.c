@@ -68,7 +68,7 @@ inline void set_matrixes(double *ad, double *au, double *adb, double *aub, doubl
 #define VEO_WRITE_MEM(dst, src, size) veo_write_mem_wrapper((dst), (src), (size), __LINE__)
 #define VEO_CALL_ASYNC(symname, argp) veo_call_async_wrapper((symname), (argp), __LINE__)
 #define VEO_CALL_WAIT(reqid) veo_call_wait_wrapper((reqid), __LINE__)
-#define VEO_CALL_SYNC(symname, argp) veo_call_sync((symname), (argp), __LINE__)
+#define VEO_CALL_SYNC(symname, argp) veo_call_sync_wrapper((symname), (argp), __LINE__)
 
 static inline void veo_alloc_mem_wrapper(uint64_t* addr, const size_t size, int line) {
     int rc;
@@ -112,7 +112,7 @@ static inline uint64_t veo_call_wait_wrapper(uint64_t reqid, int line) {
     return retval;
 }
 
-static inline uint64_t veo_call_sync(const char* symname, struct veo_args* argp, int line) {
+static inline uint64_t veo_call_sync_wrapper(const char* symname, struct veo_args* argp, int line) {
     uint64_t id, retval;
 
     id = veo_call_async_by_name(ctx, veo_handle, symname, argp);

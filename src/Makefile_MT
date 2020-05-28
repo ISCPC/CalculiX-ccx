@@ -12,6 +12,8 @@ WITH_EXODUSII = false
 WITH_MKL = true
 WITH_MKL_STATIC = false
 WITH_AURORA = false
+WITH_AURORA_AVEO = false
+AVEOPATH = /usr/local
 
 OPT = -O2
 #OPT = -Ofast -march=native
@@ -66,8 +68,13 @@ endif
 
 # SX-AURORA HeteroSolver
 ifeq ($(WITH_AURORA),true)
+ifeq ($(WITH_AURORA_AVEO),true)
+	CFLAGS += -DAURORA -I$(AVEOPATH)/include
+	LDFLAGS += -L$(AVEOPATH)/lib -Wl,-rpath=$(AVEOPATH)/lib -lveo
+else
 	CFLAGS += -DAURORA -I/opt/nec/ve/veos/include
 	LDFLAGS += -L/opt/nec/ve/veos/lib64 -Wl,-rpath=/opt/nec/ve/veos/lib64 -lveo
+endif
 endif
 
 .c.o :
