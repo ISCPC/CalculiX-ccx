@@ -69,7 +69,7 @@ endif
 # SX-AURORA HeteroSolver
 ifeq ($(WITH_AURORA),true)
 ifeq ($(WITH_AURORA_AVEO),true)
-	CFLAGS += -DAURORA -I$(AVEOPATH)/include
+	CFLAGS += -DAURORA -DUSE_AVEO -I$(AVEOPATH)/include
 	LDFLAGS += -L$(AVEOPATH)/lib -Wl,-rpath=$(AVEOPATH)/lib -lveo
 else
 	CFLAGS += -DAURORA -I/opt/nec/ve/veos/include

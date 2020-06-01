@@ -31,6 +31,22 @@ static struct veo_thr_ctxt *ctx;
 static uint64_t aptr, aind, val;
 static int mrow, ncol;
 
+static struct veo_func_table {
+    char* symname;
+    uint64_t vemva;
+} libccx_func_table[] = {
+   {"factorize", NULL},
+   {"solve", NULL},
+   {"finalize", NULL},
+   {"cgve_solve", NULL}
+};
+
+#define LIBCCX_FACTORIZE  0
+#define LIBCCX_SOLVE      1
+#define LIBCCX_FINALIZE   2
+#define LIBCCX_CGVE_SOLVE 3
+#define LIBCCX_NUM_SYMS   4
+
 inline void set_matrixes(double *ad, double *au, double *adb, double *aub, double *sigma,
         ITG *icol, ITG *irow, ITG *neq, ITG *nzs, ITG *pointers, ITG *indice, double *value, long long ndim){
     ITG i,j,k,l;
@@ -66,9 +82,9 @@ inline void set_matrixes(double *ad, double *au, double *adb, double *aub, doubl
 
 #define VEO_ALLOC_MEM(addr, size) veo_alloc_mem_wrapper((addr), (size), __LINE__)
 #define VEO_WRITE_MEM(dst, src, size) veo_write_mem_wrapper((dst), (src), (size), __LINE__)
-#define VEO_CALL_ASYNC(symname, argp) veo_call_async_wrapper((symname), (argp), __LINE__)
+#define VEO_CALL_ASYNC(symid, argp) veo_call_async_wrapper((symid), (argp), __LINE__)
 #define VEO_CALL_WAIT(reqid) veo_call_wait_wrapper((reqid), __LINE__)
-#define VEO_CALL_SYNC(symname, argp) veo_call_sync_wrapper((symname), (argp), __LINE__)
+#define VEO_CALL_SYNC(symid, argp) veo_call_sync_wrapper((symid), (argp), __LINE__)
 
 static inline void veo_alloc_mem_wrapper(uint64_t* addr, const size_t size, int line) {
     int rc;
@@ -90,12 +106,12 @@ static inline void veo_write_mem_wrapper(uint64_t dst, const void* src, size_t s
     }
 }
 
-static inline uint64_t veo_call_async_wrapper(const char* symname, struct veo_args* argp, int line) {
+static inline uint64_t veo_call_async_wrapper(int symid, struct veo_args* argp, int line) {
     uint64_t id;
 
-    id = veo_call_async_by_name(ctx, veo_handle, symname, argp);
+    id = veo_call_async(ctx, libccx_func_table[symid].vemva, argp);
     if (id == VEO_REQUEST_ID_INVALID) {
-        printf("ERROR: veo_call_async_by_name(\"%s\") failed (line:%d)\n", symname, line);
+        printf("ERROR: veo_call_async(\"%s\") failed (line:%d)\n", libccx_func_table[symid].symname, line);
         exit(1);
     }
     return id;
@@ -112,20 +128,29 @@ static inline uint64_t veo_call_wait_wrapper(uint64_t reqid, int line) {
     return retval;
 }
 
-static inline uint64_t veo_call_sync_wrapper(const char* symname, struct veo_args* argp, int line) {
+static inline uint64_t veo_call_sync_wrapper(int symid, struct veo_args* argp, int line) {
     uint64_t id, retval;
-
-    id = veo_call_async_by_name(ctx, veo_handle, symname, argp);
-    if (id == VEO_REQUEST_ID_INVALID) {
-        printf("ERROR: veo_call_async_by_name(\"%s\") failed (line:%d)\n", symname, line);
-        exit(1);
-    }
-
-    int rc = veo_call_wait_result(ctx, id, &retval);
+    int rc;
+#ifdef USE_AVEO
+    uint64_t addr;
+    rc = veo_call_sync(proc, libccx_func_table[symid].vemva, argp, &retval);
     if (rc != VEO_COMMAND_OK) {
-        printf("ERROR: veo_call_wait_result(\"%s\") failed with rc=%d (line:%d)\n", symname, rc, line);
+        printf("ERROR: veo_call_sync(\"%s\") failed with rc=%d (line:%d)\n", libccx_func_table[symid].symname, rc, line);
         exit(1);
     }
+#else
+    id = veo_call_async(ctx, libccx_func_table[symid].vemva, argp);
+    if (id == VEO_REQUEST_ID_INVALID) {
+        printf("ERROR: veo_call_async(\"%s\") failed (line:%d)\n", libccx_func_table[symid].symname, line);
+        exit(1);
+    }
+
+    rc = veo_call_wait_result(ctx, id, &retval);
+    if (rc != VEO_COMMAND_OK) {
+        printf("ERROR: veo_call_wait_result(\"%s\") failed with rc=%d (line:%d)\n", libccx_func_table[symid].symname, rc, line);
+        exit(1);
+    }
+#endif
     return retval;
 }
 
@@ -171,7 +196,7 @@ void aurora_hs_factor(double *ad, double *au, double *adb, double *aub,
     VEO_WRITE_MEM(val, value, ndim*sizeof(double));
     veo_args_set_i64(argp, 4, val);
 
-    retval = VEO_CALL_SYNC("factorize", argp);
+    retval = VEO_CALL_SYNC(LIBCCX_FACTORIZE, argp);
     if (retval !=0) {
         printf("ERROR: %s failed with %ld\n", __FUNCTION__, retval);
         exit(1);
@@ -199,7 +224,7 @@ void aurora_hs_solve(double *b){
     VEO_ALLOC_MEM(&xptr, ncol*sizeof(double));
     veo_args_set_i64(argp, 1, xptr);
 
-    retval = VEO_CALL_SYNC("solve", argp);
+    retval = VEO_CALL_SYNC(LIBCCX_SOLVE, argp);
     if (retval !=0) {
         printf("ERROR: %s failed with %ld\n", __FUNCTION__, retval);
         exit(1);
@@ -219,7 +244,7 @@ void aurora_hs_cleanup(){
     uint64_t retval;
 
     // Call VE function named "finalize"
-    retval = VEO_CALL_SYNC("finalize", argp);
+    retval = VEO_CALL_SYNC(LIBCCX_FACTORIZE, argp);
     if (retval !=0) {
         printf("ERROR: %s failed with %ld\n", __FUNCTION__, retval);
         exit(1);
@@ -274,7 +299,7 @@ void aurora_hs_main(double *ad, double *au, double *adb, double *aub, double *si
     VEO_WRITE_MEM(val, value, ndim*sizeof(double));
     veo_args_set_i64(argp1, 4, val);
 
-    id = VEO_CALL_ASYNC("factorize", argp1);
+    id = VEO_CALL_ASYNC(LIBCCX_FACTORIZE, argp1);
 
     // Call VE function named "solve"
     struct veo_args *argp2 = veo_args_alloc();
@@ -291,7 +316,7 @@ void aurora_hs_main(double *ad, double *au, double *adb, double *aub, double *si
         printf("ERROR: %s:factorize failed with %ld\n", __FUNCTION__, retval);
         exit(1);
     } 
-    id = VEO_CALL_ASYNC("solve", argp2);
+    id = VEO_CALL_ASYNC(LIBCCX_SOLVE, argp2);
     SFREE(pointers);
     SFREE(indice);
     SFREE(value);
@@ -305,7 +330,7 @@ void aurora_hs_main(double *ad, double *au, double *adb, double *aub, double *si
     veo_read_mem(proc, b, xptr, ncol*sizeof(double));
 
     // Call VE function named "finalize"
-    id = VEO_CALL_ASYNC("finalize", argp1);
+    id = VEO_CALL_ASYNC(LIBCCX_FINALIZE, argp1);
     veo_args_free(argp2);
     veo_free_mem(proc, bptr);
     veo_free_mem(proc, xptr);
@@ -387,7 +412,7 @@ void aurora_cg_main(double *ad, double *au, double *adb, double *aub, double *si
 
     VEO_ALLOC_MEM(&xptr, neq*sizeof(double));
     veo_args_set_i64(argp, 6, xptr);
-    retval = VEO_CALL_SYNC("cgve_solve", argp);
+    retval = VEO_CALL_SYNC(LIBCCX_CGVE_SOLVE, argp);
     if (retval !=0) {
         printf("ERROR: %s failed with %ld\n", __FUNCTION__, retval);
         exit(1);
@@ -408,6 +433,8 @@ void aurora_cg_main(double *ad, double *au, double *adb, double *aub, double *si
 #define CCX_VEO_DEFAULT_LIBRARY_PATH "/usr/local/lib/CalculiX/libccx.so"
 
 int aurora_init() {
+    int i;
+
     proc = veo_proc_create(0);
     if (proc == NULL) {
         printf("ERROR: Creating VE offload process failed.\n");
@@ -434,6 +461,14 @@ int aurora_init() {
         return -1;
     }
 
+    for (i=0; i<LIBCCX_NUM_SYMS; i++) {
+        libccx_func_table[i].vemva = veo_get_sym(proc, veo_handle, libccx_func_table[i].symname);
+        if (libccx_func_table[i].vemva == 0) {
+            printf("ERROR: Cannot find symbol '%s' in libccx.so.\n", libccx_func_table[i].symname);
+            fflush(stdout);
+            return -1;
+        }
+    }
     return 0;
 }
 
