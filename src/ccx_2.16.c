@@ -103,6 +103,13 @@ double *co=NULL, *xboun=NULL, *coefmpc=NULL, *xforc=NULL,*clearini=NULL,
 double fei[3],*xmodal=NULL,timepar[5],
   alpha[2]={0.,0.5},ttime=0.,qaold[2]={0.,0.},physcon[14]={0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
 
+/*
+ * Additional variables for the coupling with preCICE
+ * preCICE is used only if a participant name is provided as a command line argument!
+ */
+char preciceParticipantName[256] = "", configFilename[256] = "config.yml";
+int preciceUsed = 0;
+
 char* env_solver;
 TIMELOG(tl);
 
@@ -133,6 +140,16 @@ else{
   for(i=1;i<argc;i++){
     if(strcmp1(argv[i],"-o")==0) {
     strcpy(output,argv[i+1]);break;}
+
+    // Get preCICE participantName
+    if(strcmp1(argv[i],"-precice-participant")==0) {
+        strcpy(preciceParticipantName,argv[i+1]);
+        preciceUsed = 1;
+    }
+    // Overwrite YAML config file name in case a specific file name is given on the command line
+    if(strcmp1(argv[i],"-precice-config")==0) {
+        strcpy(configFilename,argv[i+1]);
+    }
   }
 }
 //setenv("CCX_JOBNAME_GETJOBNAME",jobnamec,1);
@@ -1125,7 +1142,130 @@ while(istat>=0) {
   /* nmethod=13: Green function calculation */
      
 
-  if((nmethod<=1)||(nmethod==11)||((iperturb[0]>1)&&(nmethod<8)))
+if(preciceUsed) {
+        int isStaticOrDynamic = (nmethod == 1) || (nmethod == 4);
+        int isDynamic = nmethod == 4;
+        int isThermalAnalysis = ithermal[0] >= 2;
+        
+        if(isStaticOrDynamic && isThermalAnalysis) {
+            
+            printf("Starting CHT analysis via preCICE...\n");
+            
+            mpcinfo[0]=memmpc_;mpcinfo[1]=mpcfree;mpcinfo[2]=icascade;
+            mpcinfo[3]=maxlenmpc;
+            
+            nonlingeo_precice(&co,&nk,&kon,&ipkon,&lakon,&ne,nodeboun,ndirboun,xboun,&nboun, 
+	     &ipompc,&nodempc,&coefmpc,&labmpc,&nmpc,nodeforc,ndirforc,xforc,
+             &nforc,&nelemload,&sideload,xload,&nload, 
+	     nactdof,&icol,jq,&irow,neq,&nzl,&nmethod,&ikmpc, 
+	     &ilmpc,ikboun,ilboun,elcon,nelcon,rhcon,nrhcon,
+	     alcon,nalcon,alzero,&ielmat,&ielorien,&norien,orab,&ntmat_,
+             t0,t1,t1old,ithermal,prestr,&iprestr, 
+	     &vold,iperturb,sti,nzs,&kode,filab,&idrct,jmax,
+	     jout,timepar,eme,xbounold,xforcold,xloadold,
+	     veold,accold,amname,amta,namta,
+	     &nam,iamforc,&iamload,iamt1,alpha,
+             &iexpl,iamboun,plicon,nplicon,plkcon,nplkcon,
+	     &xstate,&npmat_,&istep,&ttime,matname,qaold,mi,
+	     &isolver,&ncmat_,&nstate_,&iumat,cs,&mcs,&nkon,&ener,
+	     mpcinfo,output,
+             shcon,nshcon,cocon,ncocon,physcon,&nflow,ctrl,
+             set,&nset,istartset,iendset,ialset,&nprint,prlab,
+             prset,&nener,ikforc,ilforc,trab,inotr,&ntrans,&fmpc,
+             cbody,ibody,xbody,&nbody,xbodyold,ielprop,prop,
+	     &ntie,tieset,&itpamp,&iviewfile,jobnamec,tietol,&nslavs,thicke,
+	     ics,&nintpoint,&mortar,
+	     &ifacecount,typeboun,&islavsurf,&pslavsurf,&clearini,&nmat,
+	     xmodal,&iaxial,&inext,&nprop,&network,orname,vel,&nef,
+	     velo,veloo,energy,itempuser,preciceParticipantName,configFilename);
+            
+            memmpc_=mpcinfo[0];mpcfree=mpcinfo[1];icascade=mpcinfo[2];
+            maxlenmpc=mpcinfo[3];
+            
+        } else if(isDynamic && !isThermalAnalysis) {
+            
+            printf("Starting FSI analysis via preCICE");
+            
+            if(iperturb[1]==0) {
+                printf(" using the geometrically linear CalculiX solver...\n");
+                
+                mpcinfo[0]=memmpc_;mpcinfo[1]=mpcfree;mpcinfo[2]=icascade;
+                mpcinfo[3]=maxlenmpc;
+                
+                nonlingeo_precice(&co,&nk,&kon,&ipkon,&lakon,&ne,nodeboun,ndirboun,xboun,&nboun, 
+	     &ipompc,&nodempc,&coefmpc,&labmpc,&nmpc,nodeforc,ndirforc,xforc,
+             &nforc,&nelemload,&sideload,xload,&nload, 
+	     nactdof,&icol,jq,&irow,neq,&nzl,&nmethod,&ikmpc, 
+	     &ilmpc,ikboun,ilboun,elcon,nelcon,rhcon,nrhcon,
+	     alcon,nalcon,alzero,&ielmat,&ielorien,&norien,orab,&ntmat_,
+             t0,t1,t1old,ithermal,prestr,&iprestr, 
+	     &vold,iperturb,sti,nzs,&kode,filab,&idrct,jmax,
+	     jout,timepar,eme,xbounold,xforcold,xloadold,
+	     veold,accold,amname,amta,namta,
+	     &nam,iamforc,&iamload,iamt1,alpha,
+             &iexpl,iamboun,plicon,nplicon,plkcon,nplkcon,
+	     &xstate,&npmat_,&istep,&ttime,matname,qaold,mi,
+	     &isolver,&ncmat_,&nstate_,&iumat,cs,&mcs,&nkon,&ener,
+	     mpcinfo,output,
+             shcon,nshcon,cocon,ncocon,physcon,&nflow,ctrl,
+             set,&nset,istartset,iendset,ialset,&nprint,prlab,
+             prset,&nener,ikforc,ilforc,trab,inotr,&ntrans,&fmpc,
+             cbody,ibody,xbody,&nbody,xbodyold,ielprop,prop,
+	     &ntie,tieset,&itpamp,&iviewfile,jobnamec,tietol,&nslavs,thicke,
+	     ics,&nintpoint,&mortar,
+	     &ifacecount,typeboun,&islavsurf,&pslavsurf,&clearini,&nmat,
+	     xmodal,&iaxial,&inext,&nprop,&network,orname,vel,&nef,
+	     velo,veloo,energy,itempuser,preciceParticipantName,configFilename);
+                
+                memmpc_=mpcinfo[0];mpcfree=mpcinfo[1];icascade=mpcinfo[2];
+                maxlenmpc=mpcinfo[3];
+            }
+            else if(iperturb[1]==1){
+                printf(" using the geometrically non-linear CalculiX solver...\n");
+                
+                mpcinfo[0]=memmpc_;mpcinfo[1]=mpcfree;mpcinfo[2]=icascade;
+                mpcinfo[3]=maxlenmpc;
+                
+                nonlingeo_precice(&co,&nk,&kon,&ipkon,&lakon,&ne,nodeboun,ndirboun,xboun,&nboun, 
+	     &ipompc,&nodempc,&coefmpc,&labmpc,&nmpc,nodeforc,ndirforc,xforc,
+             &nforc,&nelemload,&sideload,xload,&nload, 
+	     nactdof,&icol,jq,&irow,neq,&nzl,&nmethod,&ikmpc, 
+	     &ilmpc,ikboun,ilboun,elcon,nelcon,rhcon,nrhcon,
+	     alcon,nalcon,alzero,&ielmat,&ielorien,&norien,orab,&ntmat_,
+             t0,t1,t1old,ithermal,prestr,&iprestr, 
+	     &vold,iperturb,sti,nzs,&kode,filab,&idrct,jmax,
+	     jout,timepar,eme,xbounold,xforcold,xloadold,
+	     veold,accold,amname,amta,namta,
+	     &nam,iamforc,&iamload,iamt1,alpha,
+             &iexpl,iamboun,plicon,nplicon,plkcon,nplkcon,
+	     &xstate,&npmat_,&istep,&ttime,matname,qaold,mi,
+	     &isolver,&ncmat_,&nstate_,&iumat,cs,&mcs,&nkon,&ener,
+	     mpcinfo,output,
+             shcon,nshcon,cocon,ncocon,physcon,&nflow,ctrl,
+             set,&nset,istartset,iendset,ialset,&nprint,prlab,
+             prset,&nener,ikforc,ilforc,trab,inotr,&ntrans,&fmpc,
+             cbody,ibody,xbody,&nbody,xbodyold,ielprop,prop,
+	     &ntie,tieset,&itpamp,&iviewfile,jobnamec,tietol,&nslavs,thicke,
+	     ics,&nintpoint,&mortar,
+	     &ifacecount,typeboun,&islavsurf,&pslavsurf,&clearini,&nmat,
+	     xmodal,&iaxial,&inext,&nprop,&network,orname,vel,&nef,
+	     velo,veloo,energy,itempuser,preciceParticipantName,configFilename);
+                
+                memmpc_=mpcinfo[0];mpcfree=mpcinfo[1];icascade=mpcinfo[2];
+                maxlenmpc=mpcinfo[3];
+            }
+            else {
+                printf("ERROR: This simulation type is not available with preCICE");
+                exit(0);
+            }
+        }
+        
+        else {
+            printf("ERROR: Only thermal coupling or FSI is available with preCICE");
+            exit(0);
+        }
+    }
+  else if((nmethod<=1)||(nmethod==11)||((iperturb[0]>1)&&(nmethod<8)))
     {
 	if(iperturb[0]<2){
 	
