@@ -93,7 +93,7 @@ ADAPTER_PATH = ../lib/calculix-adapter
 	PKGCONF_CFLAGS  = $(shell pkg-config --cflags libprecice)
 	PKGCONF_LIBS    = $(shell pkg-config --libs libprecice)
 
-	CFLAGS += -I$(ADAPTER_PATH)/adapter -I. $(PKGCONF_CFLAGS)
+	CFLAGS += -DPRECICE -I$(ADAPTER_PATH)/adapter -I. $(PKGCONF_CFLAGS)
 	FFLAGS += -I$(ADAPTER_PATH)/adapter -I. $(PKGCONF_CFLAGS)
 	LDFLAGS += -lstdc++ -lyaml-cpp $(PKGCONF_LIBS)
 

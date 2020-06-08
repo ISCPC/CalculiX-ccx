@@ -103,12 +103,14 @@ double *co=NULL, *xboun=NULL, *coefmpc=NULL, *xforc=NULL,*clearini=NULL,
 double fei[3],*xmodal=NULL,timepar[5],
   alpha[2]={0.,0.5},ttime=0.,qaold[2]={0.,0.},physcon[14]={0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
 
+#ifdef PRECICE
 /*
  * Additional variables for the coupling with preCICE
  * preCICE is used only if a participant name is provided as a command line argument!
  */
 char preciceParticipantName[256] = "", configFilename[256] = "config.yml";
 int preciceUsed = 0;
+#endif
 
 char* env_solver;
 TIMELOG(tl);
@@ -141,6 +143,7 @@ else{
     if(strcmp1(argv[i],"-o")==0) {
     strcpy(output,argv[i+1]);break;}
 
+#ifdef PRECICE
     // Get preCICE participantName
     if(strcmp1(argv[i],"-precice-participant")==0) {
         strcpy(preciceParticipantName,argv[i+1]);
@@ -150,6 +153,7 @@ else{
     if(strcmp1(argv[i],"-precice-config")==0) {
         strcpy(configFilename,argv[i+1]);
     }
+#endif
   }
 }
 //setenv("CCX_JOBNAME_GETJOBNAME",jobnamec,1);
@@ -1142,6 +1146,7 @@ while(istat>=0) {
   /* nmethod=13: Green function calculation */
      
 
+#ifdef PRECICE
 if(preciceUsed) {
         int isStaticOrDynamic = (nmethod == 1) || (nmethod == 4);
         int isDynamic = nmethod == 4;
@@ -1266,6 +1271,9 @@ if(preciceUsed) {
         }
     }
   else if((nmethod<=1)||(nmethod==11)||((iperturb[0]>1)&&(nmethod<8)))
+#else
+  if((nmethod<=1)||(nmethod==11)||((iperturb[0]>1)&&(nmethod<8)))
+#endif
     {
 	if(iperturb[0]<2){
 	
