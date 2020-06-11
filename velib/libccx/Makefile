@@ -21,6 +21,6 @@ libccx.so: $(COBJS) $(FOBJS)
 	$(CC) -fpic -shared -o libccx.so $(COBJS) $(FOBJS) $(LDFLAGS)
 
 clean:
-	rm libccx.so
-	rm *.o
+	-rm libccx.so
+	-rm *.o
 

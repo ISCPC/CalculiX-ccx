@@ -12,8 +12,9 @@ WITH_EXODUSII = false
 WITH_MKL = true
 WITH_MKL_STATIC = false
 WITH_AURORA = false
+LIBCCXPATH = /opt/local/ve/lib/libccx.so
 WITH_AURORA_AVEO = false
-AVEOPATH = /usr/local
+AVEOPATH = /opt/local
 WITH_PRECICE = false
 
 OPT = -O2
@@ -69,11 +70,12 @@ endif
 
 # SX-AURORA HeteroSolver
 ifeq ($(WITH_AURORA),true)
+	CFLAGS += -DAURORA -DCCX_VEO_DEFAULT_LIBRARY_PATH=\"$(LIBCCXPATH)\"
 ifeq ($(WITH_AURORA_AVEO),true)
-	CFLAGS += -DAURORA -DUSE_AVEO -I$(AVEOPATH)/include
+	CFLAGS += -DUSE_AVEO -I$(AVEOPATH)/include
 	LDFLAGS += -L$(AVEOPATH)/lib -Wl,-rpath=$(AVEOPATH)/lib -lveo
 else
-	CFLAGS += -DAURORA -I/opt/nec/ve/veos/include
+	CFLAGS += -I/opt/nec/ve/veos/include
 	LDFLAGS += -L/opt/nec/ve/veos/lib64 -Wl,-rpath=/opt/nec/ve/veos/lib64 -lveo
 endif
 endif

@@ -430,7 +430,10 @@ void aurora_cg_main(double *ad, double *au, double *adb, double *aub, double *si
 
     return;
 }
-#define CCX_VEO_DEFAULT_LIBRARY_PATH "/opt/local/lib/CalculiX/libccx.so"
+
+#ifndef CCX_VEO_DEFAULT_LIBRARY_PATH
+#define CCX_VEO_DEFAULT_LIBRARY_PATH "/opt/local/ve/lib/libccx.so"
+#endif
 
 int aurora_init() {
     int i;
