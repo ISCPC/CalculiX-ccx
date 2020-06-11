@@ -209,9 +209,9 @@ if(env_solver)  {
         isolver=5;
     } else if (strcmp(env_solver, "PARDISO") == 0) {
         isolver=7;
-    } else if (strcmp(env_solver, "HETEROSOLVER") == 0) {
+    } else if (strcmp(env_solver, "SX-AUR_HS") == 0) {
         isolver=11;
-    } else if (strcmp(env_solver, "CGONVE") == 0) {
+    } else if (strcmp(env_solver, "SX-AUR_SCALING") == 0) {
         isolver=12;
     }
 }

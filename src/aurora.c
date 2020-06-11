@@ -378,7 +378,7 @@ void aurora_cg_main(double *ad, double *au, double *adb, double *aub, double *si
         return;
     }
 
-    printf(" Factoring the system of equations using the CG/VE solver\n\n");
+    printf("Solving the system of equations using the iterative solver on VE\n\n");
     NNEW(pointers,ITG,*neqp+1);
     NNEW(indice,ITG,ndim);
     NNEW(value,double,ndim);
@@ -430,7 +430,7 @@ void aurora_cg_main(double *ad, double *au, double *adb, double *aub, double *si
 
     return;
 }
-#define CCX_VEO_DEFAULT_LIBRARY_PATH "/usr/local/lib/CalculiX/libccx.so"
+#define CCX_VEO_DEFAULT_LIBRARY_PATH "/opt/local/lib/CalculiX/libccx.so"
 
 int aurora_init() {
     int i;

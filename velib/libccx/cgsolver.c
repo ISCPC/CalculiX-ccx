@@ -173,7 +173,7 @@ void CG (double *A, double *x, double *b, ITG neq, ITG len, ITG *ia, ITG *iz,
 
     /* solving the system of equations using the iterative solver */
 
-    printf("Solving the system of equations using the iterative solver\n\n");
+    //printf("Solving the system of equations using the iterative solver on VE\n\n");
 
     /*..initialize result, search and residual vectors.................................	*/
     qam=0.;iam=0;
