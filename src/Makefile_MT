@@ -95,7 +95,7 @@ $(OCCXMAIN): $(SCCXMAIN) frd.c
 	
 ccx_2.17_MT: $(OCCXMAIN) ccx_2.17_MT.a $(LIBS)
 ifeq ($(WITH_MKL_STATIC),true)
-	$(FC) $(FFLAGS) -o $@ $(FPPSTOP) $(OCCXMAIN) ccx_2.17.a $(LDFLAGS) $(LIBS) \
+	$(FC) $(FFLAGS) -o $@ $(FPPSTOP) $(OCCXMAIN) ccx_2.17_MT.a $(LDFLAGS) $(LIBS) \
 	-Wl,--start-group \
 	$(INTEL_LIB)/libiomp5.a \
 	$(MKL_LIB)/libmkl_gf_lp64.a \
@@ -104,7 +104,7 @@ ifeq ($(WITH_MKL_STATIC),true)
 	-Wl,--end-group \
 	-L$(CMPLR_PATH) -lpthread -lm -ldl -lc
 else
-	$(FC) $(FFLAGS) -o $@ $(FPPSTOP) $(OCCXMAIN) ccx_2.17.a $(LDFLAGS) $(LIBS) \
+	$(FC) $(FFLAGS) -o $@ $(FPPSTOP) $(OCCXMAIN) ccx_2.17_MT.a $(LDFLAGS) $(LIBS) \
 	-lpthread -lm -ldl -lc
 endif
 
