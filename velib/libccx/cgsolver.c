@@ -291,6 +291,17 @@ void CG (double *A, double *x, double *b, ITG neq, ITG len, ITG *ia, ITG *iz,
     /*..That's it......................................................................	*/
 
     free(r);free(p);free(z);
+#ifdef SBLAS
+    ierr = sblas_destroy_matrix_handle(hdl);
+    if (ierr != SBLAS_OK) {
+        if (ierr == SBLAS_ERROR_HND) {
+            printf("ERROR: sblas_create_matrix_handle with SBLAS_ERROR_HND\n");
+        } else {
+            printf("ERROR: sblas_create_matrix_handle with unknown error(%d)\n", ierr);
+        } 
+        exit(1);
+    }
+#endif
     return;
 }
 /*---------------------------------------------------------------------------------	*/
