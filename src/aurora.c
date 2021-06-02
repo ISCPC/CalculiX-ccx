@@ -131,7 +131,7 @@ static inline uint64_t veo_call_wait_wrapper(uint64_t reqid, int line) {
 static inline uint64_t veo_call_sync_wrapper(int symid, struct veo_args* argp, int line) {
     uint64_t id, retval;
     int rc;
-#ifdef USE_AVEO
+#if 1
     uint64_t addr;
     rc = veo_call_sync(proc, libccx_func_table[symid].vemva, argp, &retval);
     if (rc != VEO_COMMAND_OK) {

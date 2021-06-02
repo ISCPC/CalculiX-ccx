@@ -39,6 +39,12 @@ uint64_t factorize(int row, int col, uint64_t aptr, uint64_t aind, uint64_t val)
 
     omp_set_num_threads(8);
 
+    ierr = HS_set_option(hnd, HS_ORDP, HS_ORDP_METIS);
+    if (ierr != HS_RESULT_OK) {
+        fprintf(stderr, "ERROR: HS_set_option failed with %d.\n", ierr);
+        return ierr;
+    }
+
     //gettimeofday(&tv1, NULL);
     //printf("Call HS_preprocess(): %d, %d, ...\n", iaptr[1], iaind[1]);
     ierr = HS_preprocess_rd(hnd, iaptr, iaind, aval);
