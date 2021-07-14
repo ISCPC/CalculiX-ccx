@@ -126,6 +126,11 @@ MPI_Comm_size(MPI_COMM_WORLD, &nproc) ;
        FORTRAN(stop,());
     };
 #endif /* AURORA */
+#ifdef _SXAT_
+    if (sxat_ve_init() < 0) {
+       FORTRAN(stop,());
+    };
+#endif /* _SXAT_ */
 
 if(argc==1){printf("Usage: CalculiX.exe -i jobname\n");FORTRAN(stop,());}
 else{
@@ -1813,6 +1818,9 @@ if(nobject_>0){SFREE(objectset);}
 #ifdef AURORA
   aurora_fini();
 #endif
+#ifdef _SXAT_
+  sxat_ve_fini();
+#endif /* _SXAT_ */
 
 #ifdef CALCULIX_MPI
 MPI_Finalize();

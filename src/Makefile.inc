@@ -887,7 +887,6 @@ add_rect.c \
 arpack.c \
 arpackbu.c \
 arpackcs.c \
-aurora.c \
 bdfill.c \
 biosav.c \
 buildtquad.c \
@@ -1067,10 +1066,10 @@ stress_sen_2ndorder.c \
 stress_sen_dv.c \
 stress_sen_dx.c \
 strsplt.c \
+sxat.c \
 tau.c \
 thicknessmain.c \
 tiedcontact.c \
-timelog.c \
 trafontmortar2.c \
 trafontspcmpc.c \
 transformspcsmpcs_quad.c \

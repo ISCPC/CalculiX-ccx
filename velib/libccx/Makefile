@@ -14,7 +14,7 @@ FC=nfort
 	$(FC) $(FFLAGS) -c $<
 
 #CSRCS=arpackcs_sub.c aurora_hs.c libhs.c timelog.c
-CSRCS=libccx.c cgsolver.c timelog.c
+CSRCS=libccx.c cgsolver.c
 FSRCS=op.f
 
 COBJS = $(CSRCS:.c=.o)

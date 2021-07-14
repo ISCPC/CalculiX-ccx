@@ -34,6 +34,9 @@
 #ifdef AURORA
    #include "aurora.h"
 #endif
+#ifdef _SXAT_
+   #include "sxat.h"
+#endif
 #include "timelog.h"
 
 void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
@@ -535,8 +538,13 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #ifdef AURORA
           aurora_hs_factor(ad,au,adb,aub,&sigma,icol,irow,neq,nzs);
 #else
+#ifdef _SXAT_
+          sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+              symmetryflag, inputformat, jq, nzs[2]);
+#else
 	      printf("*ERROR in linstatic: the HeteroSolver library is not linked\n\n");
 	      FORTRAN(stop,());
+#endif
 #endif
 	  }
 	  else if(*isolver==12){
@@ -589,6 +597,9 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 		  else if(*isolver==11){
 #ifdef AURORA
 		      aurora_hs_solve(b);
+#endif
+#ifdef _SXAT_
+              sxat_ve_solve(b);
 #endif
 		  }
 		  else if(*isolver==12){
@@ -792,6 +803,9 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #ifdef AURORA
 		      aurora_hs_solve(b);
 #endif
+#ifdef _SXAT_
+              sxat_ve_solve(b);
+#endif
 		  }
 		  else if(*isolver==12){
 #ifdef AURORA
@@ -976,8 +990,13 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
       }
       aurora_hs_main(ad,au,adb,aub,&sigma,b,icol,irow,neq,nzs);
 #else
+#ifdef _SXAT_
+      sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+          symmetryflag, inputformat, jq, nzs[2]);
+#else
             printf("*ERROR in linstatic: the HeterSolver library is not linked\n\n");
             FORTRAN(stop,());
+#endif
 #endif
     }
     else if(*isolver==12){
