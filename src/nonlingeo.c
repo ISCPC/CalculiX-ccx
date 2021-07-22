@@ -1389,7 +1389,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #else
 #ifdef _SXAT_
           sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
-              symmetryflag, inputformat, jq, nzs[2]);
+              symmetryflag, inputformat, jq, nzs[0]);
           sxat_ve_solve(b);
 #else
           printf("*ERROR in nonlingeo: the HeterSolver library is not linked\n\n");
@@ -3010,8 +3010,17 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #else
 #ifdef _SXAT_
           if(*ithermal<2){
+#if 0
+              printf("INFO: Call PARDISO solver for debugging. (ithermal < 2)\n");
+		      pardiso_main(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0],
+			       &symmetryflag,&inputformat,jq,&nzs[2],&nrhs);
+#else
+              printf("INFO: Call SXAT hetero solver. (ithermal < 2)\n");
+		      //sxat_ve_main_debug(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0],
+			  //     &symmetryflag,&inputformat,jq,&nzs[2],&nrhs);
               sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
                   symmetryflag, inputformat, jq, nzs[2]);
+#endif
           } else if((*ithermal==2)&&(uncoupled)) {
               n1=neq[1]-neq[0];
               n2=nzs[1]-nzs[0];
@@ -3019,8 +3028,15 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
                    sigma, &b[neq[0]], &icol[neq[0]], iruc, n1, n2,
                    symmetryflag, inputformat, jq, nzs[2]);
           } else {
+#if 1
+              printf("INFO: Call PARDISO solver for debugging.\n");
+		      pardiso_main(ad,au,adb,aub,&sigma,b,icol,irow,&neq[1],&nzs[1],
+			      &symmetryflag,&inputformat,jq,&nzs[2],&nrhs);
+#else
+              printf("INFO: Call SXAT hetero solver.\n");
               sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[1], nzs[1],
                   symmetryflag, inputformat, jq, nzs[2]);
+#endif
           }
 #else
           printf(" *ERROR in nonlingeo: the HeteroSolver library is not linked\n\n");

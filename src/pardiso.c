@@ -23,6 +23,13 @@
 #include "CalculiX.h"
 #include "pardiso.h"
 
+//#define MATRIX_OUTPUT 1
+#ifdef MATRIX_OUTPUT
+#include <unistd.h>
+#include "matrix_io.h"
+#endif /* MATRIX_OUTPUT */
+
+
 ITG *icolpardiso=NULL,*pointers=NULL,iparm[64];
 long long pt[64];
 double *aupardiso=NULL;
@@ -287,6 +294,12 @@ void pardiso_factor(double *ad, double *au, double *adb, double *aub,
       }
   }
 
+#ifdef MATRIX_OUTPUT
+  save_matrix_csr("a.bin", *neq, pointers[*neq]-1, pointers, icolpardiso, aupardiso,
+      SPMATRIX_TYPE_CSR | SPMATRIX_TYPE_INDEX1 | SPMATRIX_TYPE_ASYMMETRIC);
+  printf("INFO: Write coefficient matrix.\n");
+  fflush(stdout);
+#endif
   FORTRAN(pardiso,(pt,&maxfct,&mnum,&mtype,&phase,neq,aupardiso,
 		   pointers,icolpardiso,perm,&nrhs,iparm,&msglvl,
                    b,x,&error));
@@ -320,6 +333,12 @@ void pardiso_solve(double *b, ITG *neq,ITG *symmetryflag,ITG *nrhs){
 
   NNEW(x,double,*nrhs**neq);
 
+#ifdef MATRIX_OUTPUT
+  save_vector("b.bin", *neq, b);
+  printf("INFO: Abort: Write right hand vector.\n");
+  fflush(stdout);
+  exit(1);
+#endif
   FORTRAN(pardiso,(pt,&maxfct,&mnum,&mtype,&phase,neq,aupardiso,
 		   pointers,icolpardiso,perm,nrhs,iparm,&msglvl,
                    b,x,&error));
