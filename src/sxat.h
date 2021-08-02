@@ -32,13 +32,6 @@ void sxat_ve_main(double *ad, double *au, double *adb, double *aub, const double
         double *b, ITG *icol, ITG *irow, const ITG neq, const ITG nzs,
 	    const ITG symmetryflag, const ITG inputformat, ITG *jq, const ITG nzs3);
 
-#if 0
-void sxat_ve_main_debug(double *ad, double *au, double *adb, double *aub,
-         double *sigma,double *b, ITG *icol, ITG *irow,
-     ITG *neq, ITG *nzs,ITG *symmetryflag,ITG *inputformat,
-     ITG *jq, ITG *nzs3,ITG *nrhs);
-#endif
-
 #ifdef __cplusplus
 }
 #endif
