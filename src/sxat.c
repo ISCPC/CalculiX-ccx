@@ -307,9 +307,9 @@ void sxat_ve_factor(double *ad, double *au, double *adb, double *aub,
 
     case SOLVER_TYPE_CG:
         if (symmetryflag==0) {
-            vesolver_set_option(hdl, VESOLVER_OPTION_SOLVER, VESOLVER_ITER_CG_ASYM);
-        } else {
             vesolver_set_option(hdl, VESOLVER_OPTION_SOLVER, VESOLVER_ITER_CG_SYM);
+        } else {
+            vesolver_set_option(hdl, VESOLVER_OPTION_SOLVER, VESOLVER_ITER_CG_ASYM);
         }
         break;
 
