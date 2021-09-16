@@ -34,7 +34,7 @@
 #ifdef AURORA
    #include "aurora.h"
 #endif
-#ifdef _SXAT_
+#ifdef SX_AURORA
    #include "sxat.h"
 #endif
 #include "timelog.h"
@@ -535,28 +535,18 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	  }
 	  else if(*isolver==11){
-#ifdef AURORA
-          aurora_hs_factor(ad,au,adb,aub,&sigma,icol,irow,neq,nzs);
-#else
-#ifdef _SXAT_
+#ifdef SX_AURORA
           sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
-              symmetryflag, inputformat, jq, nzs[2]);
+              symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
 	      printf("*ERROR in linstatic: the HeteroSolver library is not linked\n\n");
 	      FORTRAN(stop,());
 #endif
-#endif
 	  }
 	  else if(*isolver==12){
-#ifdef AURORA
-#ifdef PARDISO
-	      printf("INFO: CG/VE is not support factorizing. Use PARDISO solver for now.\n\n");
-	      pardiso_factor(ad,au,adb,aub,&sigma,icol,irow,neq,nzs,
-			     &symmetryflag,&inputformat,jq,&nzs[2]);
-#else
-	      printf("*ERROR in linstatic: the CG/VE library is not linked\n\n");
-	      FORTRAN(stop,());
-#endif
+#ifdef SX_AURORA
+          sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+              symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
 #else
 	      printf("*ERROR in linstatic: the CG/VE library is not linked\n\n");
 	      FORTRAN(stop,());
@@ -595,18 +585,13 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 		      
 		  }
 		  else if(*isolver==11){
-#ifdef AURORA
-		      aurora_hs_solve(b);
-#endif
-#ifdef _SXAT_
+#ifdef SX_AURORA
               sxat_ve_solve(b);
 #endif
 		  }
 		  else if(*isolver==12){
-#ifdef AURORA
-#ifdef PARDISO
-		      pardiso_solve(b,neq,&symmetryflag,&nrhs);
-#endif
+#ifdef SX_AURORA
+              sxat_ve_solve(b);
 #endif
 		  }
 	      }
@@ -800,18 +785,13 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 		      
 		  }
 		  else if(*isolver==11){
-#ifdef AURORA
-		      aurora_hs_solve(b);
-#endif
-#ifdef _SXAT_
+#ifdef SX_AURORA
               sxat_ve_solve(b);
 #endif
 		  }
 		  else if(*isolver==12){
-#ifdef AURORA
-#ifdef PARDISO
-		      pardiso_solve(b,neq,&symmetryflag,&nrhs);
-#endif
+#ifdef SX_AURORA
+              sxat_ve_solve(b);
 #endif
 		  }
 	      }
@@ -983,20 +963,12 @@ void linstatic(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
     }
     else if(*isolver==11){
-#ifdef AURORA
-      if(nasym>0){
-     printf(" *ERROR in linstatic: the current HeteroSolver cannot be used for asymmetric matrices\n\n");
-     FORTRAN(stop,());
-      }
-      aurora_hs_main(ad,au,adb,aub,&sigma,b,icol,irow,neq,nzs);
-#else
-#ifdef _SXAT_
+#ifdef SX_AURORA
       sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
-          symmetryflag, inputformat, jq, nzs[2]);
+          symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
             printf("*ERROR in linstatic: the HeterSolver library is not linked\n\n");
             FORTRAN(stop,());
-#endif
 #endif
     }
     else if(*isolver==12){

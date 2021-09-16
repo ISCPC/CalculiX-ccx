@@ -15,7 +15,7 @@ WITH_AURORA = false
 LIBCCXPATH = /opt/local/ve/lib/libccx.so
 WITH_AURORA_AVEO = false
 AVEOPATH = /opt/local
-VESOLVERPATH = /home/P1401/local
+VESOLVERPATH = /opt/local
 WITH_PRECICE = false
 
 OPT = -O2
@@ -71,7 +71,7 @@ endif
 
 # SX-AURORA HeteroSolver
 ifeq ($(WITH_AURORA),true)
-	CFLAGS += -D_SXAT_ -DCCX_VEO_DEFAULT_LIBRARY_PATH=\"$(LIBCCXPATH)\"
+	CFLAGS += -DSX_AURORA -DCCX_VEO_DEFAULT_LIBRARY_PATH=\"$(LIBCCXPATH)\"
 ifeq ($(WITH_AURORA_AVEO),true)
 	CFLAGS += -DUSE_AVEO -I$(AVEOPATH)/include
 	LDFLAGS += -L$(AVEOPATH)/lib -Wl,-rpath=$(AVEOPATH)/lib -lveo

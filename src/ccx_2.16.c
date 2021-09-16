@@ -30,8 +30,8 @@
 #include <sys/time.h>
 #include "CalculiX.h"
 #include "timelog.h"
-#ifdef AURORA
-#include "aurora.h"
+#ifdef SX_AURORA
+#include "sxat.h"
 #endif
 
 #ifdef CALCULIX_MPI
@@ -121,16 +121,11 @@ MPI_Comm_rank(MPI_COMM_WORLD, &myid) ;
 MPI_Comm_size(MPI_COMM_WORLD, &nproc) ;
 #endif
 
-#ifdef AURORA
-    if (aurora_init() < 0) {
-       FORTRAN(stop,());
-    };
-#endif /* AURORA */
-#ifdef _SXAT_
+#ifdef SX_AURORA
     if (sxat_ve_init() < 0) {
        FORTRAN(stop,());
     };
-#endif /* _SXAT_ */
+#endif /* SX_AURORA */
 
 if(argc==1){printf("Usage: CalculiX.exe -i jobname\n");FORTRAN(stop,());}
 else{
@@ -1815,12 +1810,9 @@ if(mortar==1){SFREE(pslavsurf);SFREE(clearini);}
 
 if(nobject_>0){SFREE(objectset);}
 
-#ifdef AURORA
-  aurora_fini();
-#endif
-#ifdef _SXAT_
+#ifdef SX_AURORA
   sxat_ve_fini();
-#endif /* _SXAT_ */
+#endif /* SX_AURORA */
 
 #ifdef CALCULIX_MPI
 MPI_Finalize();

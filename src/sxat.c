@@ -195,130 +195,6 @@ static inline void set_matrix_asymmetric_3(matrix_desc_t* desc, double *ad, doub
  * au, followed by the upper triangular matrix row by row;
  * the diagonal terms are stored in ad
  */
-static inline matrix_desc_t* set_matrix_asymmetric_1b(double *ad, double *au,
-        double *adb, double *aub, ITG *icol, ITG *irow,
-        ITG neq, ITG nzs, ITG *jq, ITG nzs3) {
-    ITG *icolpardiso=NULL,*pointers=NULL;
-    double *aupardiso=NULL;
-
-    char *env;
-    /*  char env1[32]; */
-    ITG i,j,k,l,maxfct=1,mnum=1,phase=12,nrhs=1,*perm=NULL,mtype,
-        msglvl=0,error=0,*irowpardiso=NULL,kflag,kstart,n,ifortran,
-        lfortran,index,id,k2;
-    ITG ndim,nthread,nthread_v;
-    double *b=NULL,*x=NULL;
-
-    /* lower triangular matrix is stored column by column in
-       au, followed by the upper triangular matrix row by row;
-       the diagonal terms are stored in ad */
-
-    /* reordering lower triangular matrix */
-    ndim=nzs;
-    NNEW(pointers,ITG,neq+1);
-    NNEW(irowpardiso,ITG,ndim);
-    NNEW(icolpardiso,ITG,ndim);
-    NNEW(aupardiso,double,ndim);
-
-    k=0;
-    for(i=0;i<neq;i++){
-        for(j=0;j<icol[i];j++){
-            icolpardiso[k]=i+1;
-            irowpardiso[k]=irow[k];
-            aupardiso[k]=au[k];
-            k++;
-        }
-    }
-
-    /* pardiso needs the entries row per row; so sorting is
-       needed */
-
-    kflag=2;
-    FORTRAN(isortiid,(irowpardiso,icolpardiso,aupardiso,
-                &ndim,&kflag));
-
-    /* sorting each row */
-
-    k=0;
-    pointers[0]=1;
-    if(ndim>0){
-        for(i=0;i<neq;i++){
-            j=i+1;
-            kstart=k;
-            do{
-
-                /* end of row reached */
-
-                if(irowpardiso[k]!=j){
-                    n=k-kstart;
-                    FORTRAN(isortid,(&icolpardiso[kstart],&aupardiso[kstart],
-                                &n,&kflag));
-                    pointers[i+1]=k+1;
-                    break;
-                }else{
-
-                    /* end of last row reached */
-
-                    if(k+1==ndim){
-                        n=k-kstart+1;
-                        FORTRAN(isortid,(&icolpardiso[kstart],&aupardiso[kstart],
-                                    &n,&kflag));
-                        break;
-                    }else{
-
-                        /* end of row not yet reached */
-
-                        k++;
-                    }
-                }
-            }while(1);
-        }
-    }
-    pointers[neq]=ndim+1;
-    SFREE(irowpardiso);
-
-    /* composing the matrix: lower triangle + diagonal + upper triangle */
-
-    ndim=neq+2*nzs;
-    RENEW(icolpardiso,ITG,ndim);
-    RENEW(aupardiso,double,ndim);
-    k=ndim;
-    for(i=neq-1;i>=0;i--){
-        l=k+1;
-        for(j=jq[i+1]-1;j>=jq[i];j--){
-            icolpardiso[--k]=irow[j-1];
-            aupardiso[k]=au[j+nzs3-1];
-        }
-        icolpardiso[--k]=i+1;
-        aupardiso[k]=ad[i];
-        for(j=pointers[i+1]-1;j>=pointers[i];j--){
-            icolpardiso[--k]=icolpardiso[j-1];
-            aupardiso[k]=aupardiso[j-1];
-        }
-        pointers[i+1]=l;
-    }
-    pointers[0]=1;
-
-#ifdef MATRIX_OUTPUT
-    save_matrix_csr("a.bin", neq, pointers[neq]-1, pointers, icolpardiso, aupardiso,
-        SPMATRIX_TYPE_CSR | SPMATRIX_TYPE_INDEX1 | SPMATRIX_TYPE_ASYMMETRIC);
-    printf("INFO: Write coefficient matrix.\n");
-    fflush(stdout);
-    exit(1);
-#endif
-
-    matrix_desc_t* desc = vesolver_alloc_matrix(hdl, neq, ndim,
-        MATRIX_TYPE_CSR|MATRIX_TYPE_INDEX1|MATRIX_TYPE_ASYMMETRIC);
-    bcopy(pointers, desc->pointers, sizeof(ITG)*(neq+1));
-    bcopy(icolpardiso, desc->indice, sizeof(ITG)*ndim);
-    bcopy(aupardiso, desc->values, sizeof(double)*ndim);
-    SFREE(pointers);
-    SFREE(icolpardiso);
-    SFREE(aupardiso);
-
-    return desc;
-}
-
 static inline void set_matrix_asymmetric_1(matrix_desc_t* desc, double *ad, double *au, double *adb, double *aub, const double sigma,
         ITG *icol, ITG *irow, const ITG nzs, ITG *jq, const ITG nzs3) {
     const ITG neq = desc->neq;
@@ -419,20 +295,40 @@ void sxat_ve_fini() {
 
 void sxat_ve_factor(double *ad, double *au, double *adb, double *aub,
         const double sigma, ITG *icol, ITG *irow, const ITG neq, const ITG nzs,
-	    const ITG symmetryflag, const ITG inputformat, ITG *jq, const ITG nzs3) {
+	    const ITG symmetryflag, const ITG inputformat, ITG *jq, const ITG nzs3,
+        const int solvertype) {
     matrix_desc_t* desc = NULL;
 
-    vesolver_set_option(hdl, VESOLVER_OPTION_SOLVER, VESOLVER_ITER_CG_ASYM);
-    //vesolver_set_option(hdl, VESOLVER_OPTION_SOLVER, VESOLVER_DIRECT_HS);
+    /* Set Solver type */
+    switch (solvertype) {
+    case SOLVER_TYPE_HS:
+        vesolver_set_option(hdl, VESOLVER_OPTION_SOLVER, VESOLVER_DIRECT_HS);
+        break;
 
+    case SOLVER_TYPE_CG:
+        if (symmetryflag==0) {
+            vesolver_set_option(hdl, VESOLVER_OPTION_SOLVER, VESOLVER_ITER_CG_ASYM);
+        } else {
+            vesolver_set_option(hdl, VESOLVER_OPTION_SOLVER, VESOLVER_ITER_CG_SYM);
+        }
+        break;
+
+    case SOLVER_TYPE_BICGSTAB2:
+        vesolver_set_option(hdl, VESOLVER_OPTION_SOLVER, VESOLVER_ITER_BICGSTAB2);
+        break;
+
+    default:
+        fprintf("ERROR: Invalid solver type. (type=%d)\n", solvertype);
+        exit(1);
+    }
+
+    /* Set Matrix */
     if(symmetryflag==0) {
-        printf(" Solving the system of equations using the symmetric VE solver\n\n");
+        printf(" Solving the system of equations using the symmetric VE solver (solvertype=%d)\n\n", solvertype);
         desc = vesolver_alloc_matrix(hdl, neq, neq+nzs,
             MATRIX_TYPE_CSC|MATRIX_TYPE_INDEX1|MATRIX_TYPE_SYMMETRIC);
-        //    MATRIX_TYPE_CSC|MATRIX_TYPE_INDEX0|MATRIX_TYPE_SYMMETRIC);
 
         set_matrix_symmetric(desc, ad, au, adb, aub, sigma, icol, irow, nzs);
-        //set_matrix(desc, ad, au, adb, aub, sigma, icol, irow, nzs);
     } else {
         printf(" Solving the system of equations using the unsymmetric VE solver (format=%d)\n\n", inputformat);
 
@@ -441,14 +337,9 @@ void sxat_ve_factor(double *ad, double *au, double *adb, double *aub,
                 MATRIX_TYPE_CSR|MATRIX_TYPE_INDEX1|MATRIX_TYPE_ASYMMETRIC);
             set_matrix_asymmetric_3(desc, ad, au, adb, aub, sigma, icol, irow, nzs);
         } else if(inputformat==1) {
-#if 0
-            desc = set_matrix_asymmetric_1b(ad, au, adb, aub, icol, irow, 
-                neq, nzs, jq, nzs3);
-#else
             desc = vesolver_alloc_matrix(hdl, neq, neq+nzs*2,
                 MATRIX_TYPE_CSR|MATRIX_TYPE_INDEX1|MATRIX_TYPE_ASYMMETRIC);
             set_matrix_asymmetric_1(desc, ad, au, adb, aub, sigma, icol, irow, nzs, jq, nzs3);
-#endif
         }
     }
 
@@ -485,9 +376,9 @@ void sxat_ve_cleanup() {
 void sxat_ve_main(double *ad, double *au, double *adb, double *aub,
          const double sigma, double *b, ITG *icol, ITG *irow,
          const ITG neq, const ITG nzs, const ITG symmetryflag, const ITG inputformat,
-         ITG *jq, const ITG nzs3) {
+         ITG *jq, const ITG nzs3, const int solvertype) {
     sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq, nzs,
-        symmetryflag, inputformat, jq, nzs3);
+        symmetryflag, inputformat, jq, nzs3, solvertype);
     sxat_ve_solve(b);
     sxat_ve_cleanup();
 }

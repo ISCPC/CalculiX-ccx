@@ -49,10 +49,12 @@ typedef struct matrix_desc {
  */
 #define VESOLVER_OPTION_SOLVER       1
 
-#define VESOLVER_ITER_CG             1
-#define VESOLVER_ITER_BICGSTAB2      2
-#define VESOLVER_DIRECT_HS           3
-#define VESOLVER_DIRECT_PARDISO      4
+#define VESOLVER_ITER_CG_SYM         1
+#define VESOLVER_ITER_CG_ASYM        2
+#define VESOLVER_ITER_BICGSTAB2      3
+
+#define VESOLVER_DIRECT_HS        1000
+#define VESOLVER_DIRECT_PARDISO   1001
 
 /*
  * VE solver API

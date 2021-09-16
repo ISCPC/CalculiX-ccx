@@ -38,7 +38,7 @@
 #ifdef AURORA
    #include "aurora.h"
 #endif
-#ifdef _SXAT_
+#ifdef SX_AURORA
    #include "sxat.h"
 #endif
 #include "timelog.h"
@@ -1307,21 +1307,18 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	  }
       else if(*isolver==11){
-#ifdef AURORA
-          aurora_hs_main(ad,au,adb,aub,&sigma,b,icol,irow,neq,nzs);
-#else
-#ifdef _SXAT_
+#ifdef SX_AURORA
           sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
-              symmetryflag, inputformat, jq, nzs[2]);
+              symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
           printf("*ERROR in nonlingeo: the HeterSolver library is not linked\n\n");
           FORTRAN(stop,());
-#endif /* _SXAT_ */
 #endif
       }
       else if(*isolver==12){
-#ifdef AURORA
-          aurora_cg_main(ad,au,adb,aub,&sigma,b,icol,irow,neq,nzs);
+#ifdef SX_AURORA
+          sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+              symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
 #else
           printf("*ERROR in nonlingeo: the CG/VE library is not linked\n\n");
           FORTRAN(stop,());
@@ -1383,32 +1380,20 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	    }
         else if(*isolver==11){
-#ifdef AURORA
-	      aurora_hs_factor(adb,aub,adb,aub,&sigma,icol,irow,neq,nzs);
-	      aurora_hs_solve(b);
-#else
-#ifdef _SXAT_
+#ifdef SX_AURORA
           sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
-              symmetryflag, inputformat, jq, nzs[0]);
+              symmetryflag, inputformat, jq, nzs[0], SOLVER_TYPE_HS);
           sxat_ve_solve(b);
 #else
           printf("*ERROR in nonlingeo: the HeterSolver library is not linked\n\n");
           FORTRAN(stop,());
 #endif
-#endif
         }
         else if(*isolver==12){
-#ifdef AURORA
-#ifdef PARDISO
-	      printf("INFO: CG/VE is not support factorizing. Use PARDISO solver for now.\n\n");
-	      pardiso_factor(adb,aub,adb,aub,&sigma,icol,irow,&neq[0],&nzs[0],
-			    &symmetryflag,&inputformat,jq,&nzs[0]);
-
-	      pardiso_solve(b,&neq[0],&symmetryflag,&nrhs);
-#else
-          printf("*ERROR in nonlingeo: the CG/VE library is not linked\n\n");
-	      FORTRAN(stop,());
-#endif
+#ifdef SX_AURORA
+          sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+              symmetryflag, inputformat, jq, nzs[0], SOLVER_TYPE_CG);
+          sxat_ve_solve(b);
 #else
           printf("*ERROR in nonlingeo: the CG/VE library is not linked\n\n");
           FORTRAN(stop,());
@@ -2992,73 +2977,39 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 	  }
       else if(*isolver==11){
-#ifdef AURORA
-          if(nasym>0){
-              printf(" *ERROR in nonlingeo: the HeteroSolver solver cannot be used for asymmetric matrices\n\n");
-              FORTRAN(stop,());
-          }
+#ifdef SX_AURORA
           if(*ithermal<2){
-              aurora_hs_main(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0]);
-          } else if((*ithermal==2)&&(uncoupled)) {
-              n1=neq[1]-neq[0];
-              n2=nzs[1]-nzs[0];
-              aurora_hs_main(&ad[neq[0]], &au[nzs[0]], &adb[neq[0]], &aub[nzs[0]],
-                   &sigma, &b[neq[0]], &icol[neq[0]], iruc, &n1, &n2);
-          } else {
-              aurora_hs_main(ad,au,adb,aub,&sigma,b,icol,irow,&neq[1],&nzs[1]);
-          }
-#else
-#ifdef _SXAT_
-          if(*ithermal<2){
-#if 0
-              printf("INFO: Call PARDISO solver for debugging. (ithermal < 2)\n");
-		      pardiso_main(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0],
-			       &symmetryflag,&inputformat,jq,&nzs[2],&nrhs);
-#else
-              printf("INFO: Call SXAT hetero solver. (ithermal < 2)\n");
-		      //sxat_ve_main_debug(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0],
-			  //     &symmetryflag,&inputformat,jq,&nzs[2],&nrhs);
               sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
-                  symmetryflag, inputformat, jq, nzs[2]);
-#endif
+                  symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
           } else if((*ithermal==2)&&(uncoupled)) {
               n1=neq[1]-neq[0];
               n2=nzs[1]-nzs[0];
               sxat_ve_main(&ad[neq[0]], &au[nzs[0]], &adb[neq[0]], &aub[nzs[0]],
                    sigma, &b[neq[0]], &icol[neq[0]], iruc, n1, n2,
-                   symmetryflag, inputformat, jq, nzs[2]);
+                   symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
           } else {
-#if 1
-              printf("INFO: Call PARDISO solver for debugging.\n");
-		      pardiso_main(ad,au,adb,aub,&sigma,b,icol,irow,&neq[1],&nzs[1],
-			      &symmetryflag,&inputformat,jq,&nzs[2],&nrhs);
-#else
-              printf("INFO: Call SXAT hetero solver.\n");
               sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[1], nzs[1],
-                  symmetryflag, inputformat, jq, nzs[2]);
-#endif
+                  symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
           }
 #else
           printf(" *ERROR in nonlingeo: the HeteroSolver library is not linked\n\n");
           FORTRAN(stop,());
 #endif
-#endif
       }
       else if(*isolver==12){
-#ifdef AURORA
-          if(nasym>0){
-              printf(" *ERROR in nonlingeo: the CG/VE solver cannot be used for asymmetric matrices\n\n");
-              FORTRAN(stop,());
-          }
+#ifdef SX_AURORA
           if(*ithermal<2){
-              aurora_cg_main(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0]);
+              sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+                  symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
           } else if((*ithermal==2)&&(uncoupled)) {
               n1=neq[1]-neq[0];
               n2=nzs[1]-nzs[0];
-              aurora_cg_main(&ad[neq[0]], &au[nzs[0]], &adb[neq[0]], &aub[nzs[0]],
-                   &sigma, &b[neq[0]], &icol[neq[0]], iruc, &n1, &n2);
+              sxat_ve_main(&ad[neq[0]], &au[nzs[0]], &adb[neq[0]], &aub[nzs[0]],
+                   sigma, &b[neq[0]], &icol[neq[0]], iruc, n1, n2,
+                   symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
           } else {
-              aurora_cg_main(ad,au,adb,aub,&sigma,b,icol,irow,&neq[1],&nzs[1]);
+              sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[1], nzs[1],
+                  symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
           }
 #else
           printf(" *ERROR in nonlingeo: the CG/VE library is not linked\n\n");
@@ -3122,21 +3073,11 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	        pardiso_solve(b,&neq[0],&symmetryflag,&nrhs);
 #endif
 	      }
-	      else if(*isolver==11){
-#ifdef AURORA
-	        aurora_hs_solve(b);
-#endif
-#ifdef _SXAT_
+#ifdef SX_AURORA
+	      else if((*isolver==11)||(*isolver==12)) {
             sxat_ve_solve(b);
-#endif
 	      }
-	      else if(*isolver==7){
-#ifdef AURORA
-#ifdef PARDISO
-	        pardiso_solve(b,&neq[0],&symmetryflag,&nrhs);
 #endif
-#endif
-	      }
 	    }
 	    if(*ithermal>1){
 	      for(k=neq[0];k<neq[1];++k){
@@ -4166,21 +4107,11 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	pardiso_cleanup(&neq[0],&symmetryflag);
 #endif
       }
-      else if(*isolver==11){
-#ifdef AURORA
-	aurora_hs_cleanup();
-#endif
-#ifdef _SXAT_
+#ifdef SX_AURORA
+      else if((*isolver==11)||(*isolver==12)){
     sxat_ve_cleanup();
-#endif
       }
-      else if(*isolver==12){
-#ifdef AURORA
-#ifdef PARDISO
-	pardiso_cleanup(&neq[0],&symmetryflag);
 #endif
-#endif
-      }
     }
   }
   
