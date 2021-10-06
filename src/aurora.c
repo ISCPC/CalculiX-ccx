@@ -18,11 +18,18 @@
 
 #ifdef AURORA
 
+//#define MATRIX_OUTPUT 1
+
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include "CalculiX.h"
 #include "aurora.h"
+#ifdef MATRIX_OUTPUT
+#include <unistd.h>
+#include "matrix_io.h"
+#endif /* MATRIX_OUTPUT */
+
 
 static uint64_t veo_handle = 0;
 static struct veo_proc_handle *proc;
@@ -274,6 +281,12 @@ void aurora_hs_main(double *ad, double *au, double *adb, double *aub, double *si
     NNEW(indice,ITG,ndim);
     NNEW(value,double,ndim);
     set_matrixes(ad, au, adb, aub, sigma, icol, irow, neq, nzs, pointers, indice, value, ndim);
+#ifdef MATRIX_OUTPUT
+    save_matrix_csr("a.bin", *neq, ndim, pointers, indice, value);
+    save_vector("b.bin", *neq, b);
+    printf("Abort: Write coefficient matrix and right hand vector.\n");
+    exit(1);
+#endif
 
     mrow = (*neq);
     ncol = (*neq);
