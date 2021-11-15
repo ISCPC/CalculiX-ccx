@@ -28,6 +28,11 @@ _set_output_format(_TWO_DIGIT_EXPONENT);
 #include <stdio.h>
 #include <string.h>
 #include "CalculiX.h"
+#include "timelog.h"
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+
 
 #ifdef CALCULIX_MPI
 ITG myid = 0,nproc = 0;
@@ -112,6 +117,12 @@ int main(int argc,char *argv[])
   MPI_Comm_rank(MPI_COMM_WORLD, &myid) ;
   MPI_Comm_size(MPI_COMM_WORLD, &nproc) ;
 #endif
+
+#ifdef SX_AURORA
+  if (sxat_ve_init() < 0) {
+    FORTRAN(stop,());
+  };
+#endif /* SX_AURORA */
 
   clock_gettime(CLOCK_MONOTONIC, &totalCalculixTimeStart);
 
@@ -1839,6 +1850,10 @@ int main(int argc,char *argv[])
 	      &nobject_,&objectset,&nmethod,iperturb,&irefineloop,
 	      &iparentel,&iprfn,&konrfn,&ratiorfn,&heading,
 	      &nodedesi,&dgdxglob,&g0,&nuel_,&xdesi);
+
+#ifdef SX_AURORA
+  sxat_ve_fini();
+#endif /* SX_AURORA */
   
 #ifdef CALCULIX_MPI
   MPI_Finalize();

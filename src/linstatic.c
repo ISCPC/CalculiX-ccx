@@ -34,6 +34,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void linstatic(double *co,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	       ITG *ne,
@@ -109,6 +113,8 @@ void linstatic(double *co,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
     *auw=NULL,*autloc=NULL,*xboun2=NULL,*coefmpc2=NULL;
 
   FILE *f1,*f2;
+
+  TIMELOG(tl);
   
 #ifdef SGI
   ITG token;
@@ -568,6 +574,24 @@ void linstatic(double *co,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	FORTRAN(stop,());
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+	sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+		      symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+	printf("*ERROR in linstatic: the HeteroSolver library is not linked\n\n");
+	FORTRAN(stop,());
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+	sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+		      symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+	printf("*ERROR in linstatic: the CG/VE library is not linked\n\n");
+	FORTRAN(stop,());
+#endif
+      }
     }
 
     /* solving the system of equations with appropriate rhs */
@@ -605,6 +629,17 @@ void linstatic(double *co,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	    pastix_solve(b,neq,&symmetryflag,&nrhs);
 #endif
 		      
+	  }
+	  else if(*isolver==11){
+#ifdef SX_AURORA
+	    sxat_ve_solve(b);
+#endif
+
+	  }
+	  else if(*isolver==12){
+#ifdef SX_AURORA
+	    sxat_ve_solve(b);
+#endif
 	  }
 	}
 	      
@@ -690,6 +725,16 @@ void linstatic(double *co,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
       }
       else if(*isolver==8){
 #ifdef PASTIX
+#endif
+      }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+	sxat_ve_cleanup();
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+	sxat_ve_cleanup();
 #endif
       }
       
@@ -824,6 +869,18 @@ void linstatic(double *co,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 #endif
 		      
 	  }
+	  else if(*isolver==11){
+#ifdef SX_AURORA
+	    sxat_ve_solve(b);
+#endif
+		      
+	  }
+	  else if(*isolver==12){
+#ifdef SX_AURORA
+	    sxat_ve_solve(b);
+#endif
+		      
+	  }
 	}
 	      
 	/* storing the Green function */
@@ -947,6 +1004,7 @@ void linstatic(double *co,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 
   }else if(*nmethod!=0){
 
+    TIMELOG_START(tl);
     /* linear static applications */
 
     if(*isolver==0){
@@ -1008,6 +1066,25 @@ void linstatic(double *co,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
       FORTRAN(stop,());
 #endif
     }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+		  symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+      printf("*ERROR in linstatic: the HeterSolver library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+		  symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+      printf("*ERROR in linstatic: the CG/VE library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    TIMELOG_END(tl, "solver for linstatic");
 
     /* saving of ad and au for sensitivity analysis */
 
