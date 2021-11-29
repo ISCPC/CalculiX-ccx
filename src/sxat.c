@@ -370,7 +370,8 @@ void sxat_ve_factor(double *ad, double *au, double *adb, double *aub,
 }
 
 void sxat_ve_solve(double *b) {
-    double res = 1.0e-10;
+    //double res = 1.0e-10;
+    double res = 1.0e-06;
 
     int cc = vesolver_solve_sync(hdl, b, b, res);
     if (cc != 0) {
