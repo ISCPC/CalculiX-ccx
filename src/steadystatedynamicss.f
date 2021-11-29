@@ -73,6 +73,10 @@
          solver(1:7)='PARDISO'
       elseif(isolver.eq.8) then
          solver(1:6)='PASTIX'
+      elseif(isolver.eq.11) then
+         solver(1:9)='SX-AUR_HS'
+      elseif(isolver.eq.12) then
+         solver(1:14)='SX-AUR_SCALING'
       endif
 !
       do i=2,n
@@ -112,6 +116,15 @@
          isolver=7
       elseif(solver(1:6).eq.'PASTIX') then
          isolver=8
+      elseif(solver(1:9).eq.'SX-AUR_HS') then
+         isolver=11
+      elseif(solver(1:14).eq.'SX-AUR_SCALING') then
+         write(*,*) '*WARNING reading *STEADY STATE DYNAMICS:'
+         write(*,*) '         the iterative scaling'
+         write(*,*) '         procedure is not available for modal'
+         write(*,*) '         dynamic calculations; the default solver'
+         write(*,*) '         is used'
+         isolver=11
       else
          write(*,*) '*WARNING reading *STEADY STATE DYNAMICS:'
          write(*,*) '         unknown solver;'
