@@ -40,6 +40,10 @@
 #ifdef PASTIX
    #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 
 void dudsmain(ITG *isolver,double *au,double *ad,double *aub,double*adb,
@@ -56,6 +60,8 @@ void dudsmain(ITG *isolver,double *au,double *ad,double *aub,double*adb,
   
   ITG sys_cpus,*ithread=NULL;
   char *env,*envloc,*envsys;
+
+  TIMELOG(tl);
   
   num_cpus=0;
   sys_cpus=0;
@@ -149,6 +155,24 @@ void dudsmain(ITG *isolver,double *au,double *ad,double *aub,double*adb,
 	    FORTRAN(stop,());
 #endif
 	}
+	else if(*isolver==11){
+#ifdef SX_AURORA
+            sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+		    symmetryflag, inputformat, jqp, nzs[2], SOLVER_TYPE_HS);
+#else
+            printf("*ERROR in dudsmain: the HeterSolver library is not linked\n\n");
+            FORTRAN(stop,());
+#endif
+	}
+	else if(*isolver==12){
+#ifdef SX_AURORA
+            sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+		    symmetryflag, inputformat, jqp, nzs[2], SOLVER_TYPE_CG);
+#else
+            printf("*ERROR in dudsmain: the CG/VE library is not linked\n\n");
+            FORTRAN(stop,());
+#endif
+	}
 
   /* Computation of the matrix duds */
   /* duds = K^-1 * ( dF/ds + dK/ds * u )
@@ -181,6 +205,7 @@ void dudsmain(ITG *isolver,double *au,double *ad,double *aub,double*adb,
           
      /* solve the system */
 		    
+                    TIMELOG_START(tl);
 		    if(*isolver==0){
 #ifdef SPOOLES
 			spooles_solve(dudsvec,&neq[1]);
@@ -206,6 +231,17 @@ void dudsmain(ITG *isolver,double *au,double *ad,double *aub,double*adb,
 			pastix_solve(dudsvec,&neq[1],&symmetryflag,&nrhs);
 #endif
                     }	      
+                    else if(*isolver==11){
+#ifdef SX_AURORA
+                        sxat_ve_solve(dudsvec);
+#endif
+                    }
+                    else if(*isolver==12){
+#ifdef SX_AURORA
+                        sxat_ve_solve(dudsvec);
+#endif
+                    }
+                    TIMELOG_END(tl, "solver for dudsmain");
 
      /* copy results vector in duds */
 
@@ -243,6 +279,16 @@ void dudsmain(ITG *isolver,double *au,double *ad,double *aub,double*adb,
 	}
 	else if(*isolver==8){
 #ifdef PASTIX
+#endif
+	}
+	else if(*isolver==11){
+#ifdef SX_AURORA
+	    sxat_ve_cleanup();
+#endif
+	}
+	else if(*isolver==12){
+#ifdef SX_AURORA
+	    sxat_ve_cleanup();
 #endif
 	}
        

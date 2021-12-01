@@ -36,6 +36,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void dynboun(double *amta,ITG *namta,ITG *nam,double *ampli, double *time,
              double *ttime,double *dtime,double *xbounold,double *xboun,
@@ -57,6 +61,8 @@ void dynboun(double *amta,ITG *namta,ITG *nam,double *ampli, double *time,
 #ifdef SGI
   ITG token=1;
 #endif
+
+  TIMELOG(tl);
     
   NNEW(xbounmin,double,*nboun);
   NNEW(xbounplus,double,*nboun);
@@ -113,6 +119,7 @@ void dynboun(double *amta,ITG *namta,ITG *nam,double *ampli, double *time,
 	bmin[ir]=bmin[ir]-au[j]*xbounmin[i];
       }
     }
+    TIMELOG_START(tl);
     if(*isolver==0){
 #ifdef SPOOLES
       spooles_solve(bmin,&neq[1]);
@@ -138,6 +145,17 @@ void dynboun(double *amta,ITG *namta,ITG *nam,double *ampli, double *time,
       pastix_solve(bmin,&neq[1],&symmetryflag,&nrhs);
 #endif
     }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_solve(bmin);
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_solve(bmin);
+#endif
+    }
+    TIMELOG_END(tl, "solver1 for dynboun");
   }
 
   /* check whether boundary conditions changed 
@@ -158,6 +176,7 @@ void dynboun(double *amta,ITG *namta,ITG *nam,double *ampli, double *time,
 	bact[ir]=bact[ir]-au[j]*xbounact[i];
       }
     }
+    TIMELOG_START(tl);
     if(*isolver==0){
 #ifdef SPOOLES
       spooles_solve(bact,&neq[1]);
@@ -183,6 +202,17 @@ void dynboun(double *amta,ITG *namta,ITG *nam,double *ampli, double *time,
       pastix_solve(bact,&neq[1],&symmetryflag,&nrhs);
 #endif
     }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_solve(bact);
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_solve(bact);
+#endif
+    }
+    TIMELOG_END(tl, "solver2 for dynboun");
   }
 
   /* check whether boundary conditions changed 
@@ -203,6 +233,7 @@ void dynboun(double *amta,ITG *namta,ITG *nam,double *ampli, double *time,
 	bplus[ir]=bplus[ir]-au[j]*xbounplus[i];
       }
     }
+    TIMELOG_START(tl);
     if(*isolver==0){
 #ifdef SPOOLES
       spooles_solve(bplus,&neq[1]);
@@ -228,6 +259,17 @@ void dynboun(double *amta,ITG *namta,ITG *nam,double *ampli, double *time,
       pastix_solve(bplus,&neq[1],&symmetryflag,&nrhs);
 #endif
     }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_solve(bplus);
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_solve(bplus);
+#endif
+    }
+    TIMELOG_END(tl, "solver2 for dynboun");
   }
   
   if((idiff[1]!=0)||(idiff[2]!=0)){

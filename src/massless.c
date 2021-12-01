@@ -20,6 +20,10 @@
 #include <stdlib.h>
 #include "CalculiX.h"
 #include "spooles.h"
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 /**
  * @brief       *MASSLESS DYNAMIC CONTACT*: Main computation of step for dynamic massless contact
@@ -110,6 +114,8 @@ void massless(double *au, double *ad, double *aub, double *adb, ITG *jq,
             sigma = 0.0, *gapdof = NULL, *gapnorm = NULL, *qtmp = NULL, *cvec = NULL, sum,
             *adbbb = NULL, *aubbb = NULL , *gcontvec=NULL, *gcontfull=NULL;
 
+    TIMELOG(tl);
+
     auw = *auwp;
     jqw = *jqwp;
     iroww = *irowwp;
@@ -196,6 +202,7 @@ void massless(double *au, double *ad, double *aub, double *adb, ITG *jq,
 
     /* call spooles_solve..... */
 
+    TIMELOG_START(tl);
     if (*isolver == 0) {
 #ifdef SPOOLES
         // spooles(adbb,aubb,adbbb,aubbb,&sigma,gapdof,icolbb,irowbb,&neqtot,&nzsbb,&symmetryflag,
@@ -242,6 +249,25 @@ void massless(double *au, double *ad, double *aub, double *adb, ITG *jq,
         FORTRAN(stop, ());
 #endif
     }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_main(adbb, aubb, adbbb, aubbb, sigma, gapdof, icolbb, irowbb, neqtot, nzsbb,
+		  symmetryflag, inputformat, jqbb, nzs[2], SOLVER_TYPE_HS);
+#else
+        printf("*ERROR in linstatic: the HeterSolver library is not linked\n\n");
+        FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_main(adbb, aubb, adbbb, aubbb, sigma, gapdof, icolbb, irowbb, neqtot, nzsbb,
+		  symmetryflag, inputformat, jqbb, nzs[2], SOLVER_TYPE_CG);
+#else
+        printf("*ERROR in linstatic: the CG/VE library is not linked\n\n");
+        FORTRAN(stop,());
+#endif
+    }
+    TIMELOG_END(tl, "solver for massless");
 
     NNEW(iacti, ITG, *nslavs);
     /* premultiply g by Wb^T and add g0 => determine active degrees => reduce g to c */

@@ -41,6 +41,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void feasibledirection(ITG *nobject,char **objectsetp,double **dgdxglobp,
                      double *g0,ITG *ndesi,ITG *nodedesi,ITG *nk,ITG *isolver,
@@ -68,6 +72,8 @@ void feasibledirection(ITG *nobject,char **objectsetp,double **dgdxglobp,
   double *au=NULL,*ad=NULL,*adb=NULL,*aub=NULL,sigma=0,*rhs=NULL,
     *vector=NULL,*xlambd=NULL,*xtf=NULL,*objnorm=NULL,*dgdxglob=NULL,
     *stn=NULL,ptime=0.;  
+
+  TIMELOG(tl);
   
   objectset=*objectsetp;dgdxglob=*dgdxglobp;ipkon=*ipkonp;lakon=*lakonp;
   kon=*konp;ielmat=*ielmatp;
@@ -272,6 +278,24 @@ void feasibledirection(ITG *nobject,char **objectsetp,double **dgdxglobp,
         FORTRAN(stop,());
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_factor(ad, au, adb, aub, sigma, icols, irows, nactive, nzss,
+		    symmetryflag, inputformat, jqs, nzss, SOLVER_TYPE_HS);
+#else
+        printf("*ERROR in projectgrad: the HeterSolver library is not linked\n\n");
+        FORTRAN(stop,());
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_factor(ad, au, adb, aub, sigma, icols, irows, nactive, nzss,
+		    symmetryflag, inputformat, jqs, nzss, SOLVER_TYPE_CG);
+#else
+        printf("*ERROR in projectgrad: the CG/VE library is not linked\n\n");
+        FORTRAN(stop,());
+#endif
+    }
         
       /* solve the system nactive-times */
 
@@ -294,6 +318,7 @@ void feasibledirection(ITG *nobject,char **objectsetp,double **dgdxglobp,
             
         /* solve the system */
             
+        TIMELOG_START(tl);
         if(*isolver==0){
 #ifdef SPOOLES
           spooles_solve(rhs,&nactive);
@@ -319,6 +344,17 @@ void feasibledirection(ITG *nobject,char **objectsetp,double **dgdxglobp,
           pastix_solve(rhs,&nactive,&symmetryflag,&nrhs);
 #endif
         }
+        else if(*isolver==11){
+#ifdef SX_AURORA
+          sxat_ve_solve(rhs);
+#endif
+        }
+        else if(*isolver==12){
+#ifdef SX_AURORA
+         sxat_ve_solve(rhs);
+#endif
+        }
+        TIMELOG_END(tl, "solver for feasibledirection");
             
         for(i=0;i<*ndesi;i++){
           vector[i]=0.00;
@@ -355,6 +391,16 @@ void feasibledirection(ITG *nobject,char **objectsetp,double **dgdxglobp,
       }
       else if(*isolver==8){
 #ifdef PASTIX
+#endif
+      }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_cleanup();
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_cleanup();
 #endif
       }
         
