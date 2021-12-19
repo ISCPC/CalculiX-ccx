@@ -158,7 +158,7 @@ void dudsmain(ITG *isolver,double *au,double *ad,double *aub,double*adb,
 	else if(*isolver==11){
 #ifdef SX_AURORA
             sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
-		    symmetryflag, inputformat, jqp, nzs[2], SOLVER_TYPE_HS);
+		    symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
             printf("*ERROR in dudsmain: the HeterSolver library is not linked\n\n");
             FORTRAN(stop,());
@@ -167,7 +167,7 @@ void dudsmain(ITG *isolver,double *au,double *ad,double *aub,double*adb,
 	else if(*isolver==12){
 #ifdef SX_AURORA
             sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
-		    symmetryflag, inputformat, jqp, nzs[2], SOLVER_TYPE_CG);
+		    symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
 #else
             printf("*ERROR in dudsmain: the CG/VE library is not linked\n\n");
             FORTRAN(stop,());
