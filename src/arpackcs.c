@@ -40,6 +40,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void arpackcs(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	      ITG *ne, 
@@ -142,6 +146,8 @@ void arpackcs(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
   ITG token;
 #endif
   
+  TIMELOG(tl);
+
   irow=*irowp;xstate=*xstatep;ipkon=*ipkonp;lakon=*lakonp;
   kon=*konp;ielmat=*ielmatp;ielorien=*ielorienp;
 
@@ -687,6 +693,24 @@ void arpackcs(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
       FORTRAN(stop,());
 #endif
     }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[0],
+		symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+      printf("*ERROR in arpackcs: the HeterSolver library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[0],
+		symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+      printf("*ERROR in arpackcs: the CG/VE library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
       
     //      SFREE(au);SFREE(ad);
       
@@ -739,6 +763,7 @@ void arpackcs(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	if((ido==-1)||(ido==1)){
 	    
 	  if(ido==-1){
+	    TIMELOG_START(tl);
 	    if(*isolver==0){
 #ifdef SPOOLES
 	      spooles_solve(temp_array,&neq[1]);
@@ -765,11 +790,23 @@ void arpackcs(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 		printf("*WARNING in arpackcs: solving step did not converge! Continuing anyway!\n");
 #endif
 	    }
+	    else if(*isolver==11){
+#ifdef SX_AURORA
+	      sxat_ve_solve(temp_array);
+#endif
+	    }
+	    else if(*isolver==12){
+#ifdef SX_AURORA
+	      sxat_ve_solve(temp_array);
+#endif
+	    }
+	    TIMELOG_END(tl, "solver1-1 for arpackcs");
 	    for(jrow=0;jrow<neq[1];jrow++){
 	      workd[ipntr[1]-1+jrow]=temp_array[jrow];
 	    }
 	  }
 	  else if(ido==1){
+	    TIMELOG_START(tl);
 	    if(*isolver==0){
 #ifdef SPOOLES
 	      spooles_solve(&workd[ipntr[2]-1],&neq[1]);
@@ -796,6 +833,17 @@ void arpackcs(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 		printf("*WARNING in arpackcs: solving step did not converge! Continuing anyway!\n");
 #endif
 	    }
+	    else if(*isolver==11){
+#ifdef SX_AURORA
+	      sxat_ve_solve(&workd[ipntr[2]-1]);
+#endif
+	    }
+	    else if(*isolver==12){
+#ifdef SX_AURORA
+	      sxat_ve_solve(&workd[ipntr[2]-1]);
+#endif
+	    }
+	    TIMELOG_END(tl, "solver1-2 for arpackcs");
 	    for(jrow=0;jrow<neq[1];jrow++){
 	      workd[ipntr[1]-1+jrow]=workd[ipntr[2]-1+jrow];
 	    }
@@ -1281,6 +1329,7 @@ void arpackcs(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	/* solving the system */
 	    
 	if(neq[1]>0){
+	  TIMELOG_START(tl);
 	  if(*isolver==0){
 #ifdef SPOOLES
 	    spooles_solve(z,&neq[1]);
@@ -1299,6 +1348,17 @@ void arpackcs(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 #endif
 		
 	  }
+	  else if(*isolver==11){
+#ifdef SX_AURORA
+	    sxat_ve_solve(z);
+#endif
+	  }
+	  else if(*isolver==12){
+#ifdef SX_AURORA
+	    sxat_ve_solve(z);
+#endif
+	  }
+	  TIMELOG_END(tl, "solver2 for arpackcs");
 	}
       }
 	  
@@ -2454,6 +2514,16 @@ void arpackcs(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
     }
     else if(*isolver==8){
 #ifdef PASTIX
+#endif
+    }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
 #endif
     }
 
