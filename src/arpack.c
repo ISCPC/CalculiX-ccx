@@ -640,8 +640,8 @@ void arpack(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
   }
   else if(*isolver==11){
 #ifdef SX_AURORA
-    sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
-			symmetryflag, inputformat, jq, nzs[0], SOLVER_TYPE_HS);
+    sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+			symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
     printf("*ERROR in arpack: the HeterSolver library is not linked\n\n");
     FORTRAN(stop,());
@@ -649,8 +649,8 @@ void arpack(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
   }
   else if(*isolver==12){
 #ifdef SX_AURORA
-    sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
-			symmetryflag, inputformat, jq, nzs[0], SOLVER_TYPE_CG);
+    sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+			symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
 #else
     printf("*ERROR in arpack: the CG/VE library is not linked\n\n");
     FORTRAN(stop,());
