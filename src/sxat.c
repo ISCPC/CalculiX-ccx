@@ -25,6 +25,7 @@
 #include "sxat.h"
 
 //#define MATRIX_OUTPUT 1
+#define DEBUG 1
 
 #ifdef MATRIX_OUTPUT
 #include <unistd.h>
@@ -37,6 +38,36 @@
 #define SPMATRIX_TYPE_ASYMMETRIC (0<<8)
 #define SPMATRIX_TYPE_SYMMETRIC  (1<<8)
 #endif /* MATRIX_OUTPUT */
+
+#ifdef DEBUG
+#define BACKTRACE() show_backtrace()
+
+#include <execinfo.h>
+#include <unistd.h>
+
+#define BT_BUF_SIZE 100
+
+void show_backtrace(void) {
+	int j, nptrs;
+	void *buffer[BT_BUF_SIZE];
+	char **strings;
+
+	nptrs = backtrace(buffer, BT_BUF_SIZE);
+
+	strings = backtrace_symbols(buffer, nptrs);
+	if (strings == NULL) {
+		perror("backtrace_symbols");
+		exit(EXIT_FAILURE);
+	}
+
+	for (j = 0; j < nptrs; j++)
+		printf("%s\n", strings[j]);
+
+	free(strings);
+}
+#else
+#define BACKTRACE()
+#endif
 
 /*
  * CalculiX solver for SXAT
@@ -365,6 +396,7 @@ void sxat_ve_factor(double *ad, double *au, double *adb, double *aub,
     int cc = vesolver_set_matrix(hdl, desc);
     if (cc != 0) {
         printf("ERROR: vesolver_set_matrix() failed with %d\n", cc);
+	BACKTRACE();
         exit(1);
     }
 }
@@ -376,6 +408,7 @@ void sxat_ve_solve(double *b) {
     int cc = vesolver_solve_sync(hdl, b, b, res);
     if (cc != 0) {
         printf("ERROR: vesolver_solver_sync() failed with %d\n", cc);
+	BACKTRACE();
         exit(1);
     }
 }
@@ -388,6 +421,8 @@ void sxat_ve_main(double *ad, double *au, double *adb, double *aub,
          const double sigma, double *b, ITG *icol, ITG *irow,
          const ITG neq, const ITG nzs, const ITG symmetryflag, const ITG inputformat,
          ITG *jq, const ITG nzs3, const int solvertype) {
+    if(neq==0) return;
+
     sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq, nzs,
         symmetryflag, inputformat, jq, nzs3, solvertype);
     sxat_ve_solve(b);
