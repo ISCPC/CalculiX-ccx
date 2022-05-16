@@ -128,10 +128,18 @@ int main(int argc,char *argv[])
 
     /* next lines deactivated on March 18, 2020 */
     
+#ifdef EXODUSII    
+    strcpy1(output,"asc ",4);
+    for(i=1;i<argc;i++){
+      if(strcmp1(argv[i],"-o")==0){
+	strcpy1(output,argv[i+1],5);break;}
+      }
+#else
     /*    for(i=1;i<argc;i++){
       if(strcmp1(argv[i],"-o")==0){
 	strcpy(output,argv[i+1]);break;}
 	}*/
+#endif
   }
 
   putenv("CCX_JOBNAME_GETJOBNAME=jobnamec");

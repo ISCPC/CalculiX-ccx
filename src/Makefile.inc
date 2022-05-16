@@ -978,6 +978,10 @@ dynboun.c \
 electromagnetics.c \
 elemChecker.c \
 elementcpuload.c \
+exo.c \
+exoselect.c \
+exosetfind.c \
+exovector.c \
 expand.c \
 external.c \
 feasibledirection.c \

@@ -3350,6 +3350,12 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	icntrl=1;
 	icutb=0;   
 
+    /* Only write a result file every 1000 increments (until
+       such time as time points can be fixed) */
+    if((iinc/1000)*1000!=iinc){
+      jprint = 0;
+    }
+
 	theta=theta+dtheta;  
 	if(dtheta>=1.-theta){
 	  if(dtheta>1.-theta){
@@ -3358,6 +3364,8 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	  }
 	  dtheta=1.-theta;
 	  dthetaref=dtheta;
+      // Ensure the result is saved
+      jprint = 1;
 	}
 	iflagact=0;
       }

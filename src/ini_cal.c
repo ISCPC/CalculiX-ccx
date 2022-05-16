@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include "CalculiX.h"
 #include "mortar.h"
 
@@ -197,7 +198,9 @@ void ini_cal(char *jobnamec,char *output,char *fneig,char *kind1,char *kind2,
   *nprint=0;
   *kode=0;
   for(i=0;i<2;i++) jout[i]=1;
+#ifndef EXODUSII    
   strcpy1(output,"asc ",4);
+#endif
 
   /* info on the kind of nonlinearity of the step */
   
