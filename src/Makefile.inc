@@ -1096,6 +1096,7 @@ stress_sen_dv.c \
 stress_sen_dx.c \
 stressmortar.c \
 strsplt.c \
+sxat.c \
 tau.c \
 thicknessmain.c \
 tiedcontact.c \

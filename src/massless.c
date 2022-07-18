@@ -35,6 +35,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 /**
  * @brief       *MASSLESS DYNAMIC CONTACT*: Main computation of step for dynamic massless contact
@@ -119,6 +123,8 @@ void massless(ITG *kslav,ITG *lslav,ITG *ktot,ITG *ltot,double *au,double *ad,
 	      double *springarea,ITG *neqslav,ITG *neqtot,double *qb,
 	      double *b ){
 
+  TIMELOG(tl);
+
   printf("\033[0;32m"); // green
   //   printf("===================> DEBUG: massless.c\n");
 
@@ -197,6 +203,7 @@ void massless(ITG *kslav,ITG *lslav,ITG *ktot,ITG *ltot,double *au,double *ad,
 
   /* factorize Kbb and premultiply gapdisp with Kbb^{-1} */
 
+  TIMELOG_START(tl);
   if(*isolver==0){
 #ifdef SPOOLES
     spooles_factor_rad(adbb,aubb,adbbb,aubbb,&sigma,icolbb,irowbb,
@@ -219,7 +226,20 @@ void massless(ITG *kslav,ITG *lslav,ITG *ktot,ITG *ltot,double *au,double *ad,
     printf("*ERROR in linstatic: the PASTIX library is not linked\n\n");
     FORTRAN(stop,());
 #endif
+  }else if(*isolver==11){
+#ifdef SX_AURORA
+#else
+    printf("*ERROR in linstatic: the HeterSolver library is not linked\n\n");
+    FORTRAN(stop,());
+#endif
+  }else if(*isolver==12){
+#ifdef SX_AURORA
+    printf("*ERROR in linstatic: the CG/VE library is not linked\n\n");
+    FORTRAN(stop,());
+#endif
   }
+  TIMELOG_END(tl, "solver for massless");
+
   SFREE(aubb);SFREE(adbb);SFREE(irowbb);SFREE(icolbb);
 
   NNEW(gapnorm,double,*nslavs);

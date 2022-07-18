@@ -37,6 +37,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 static char *lakon1,*matname1,*filabl1,*objectset1;
 
@@ -128,6 +132,7 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
     *vec=NULL,expks,*dgdu=NULL,*dv=NULL,*dstx=NULL,*conew=NULL,*depn=NULL,
     *coefmpcnew=NULL,xreal,ximag,*dgduz=NULL,*daldx=NULL,*dxstate=NULL;	
     
+  TIMELOG(tl);
   if(*nasym!=0){symmetryflag=2;inputformat=1;}
 
   /* variables for multithreading procedure */
@@ -226,6 +231,24 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 			 &symmetryflag,&inputformat,jq,&nzs[2]);
 #else
       printf("*ERROR in objectivemain_se: the PASTIX library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+                     symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+      printf("*ERROR in objectivemain_se: the HeteroSolver library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+                     symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+      printf("*ERROR in objectivemain_se: the CG/VE library is not linked\n\n");
       FORTRAN(stop,());
 #endif
     }
@@ -422,6 +445,7 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	    	       
 	/* solve the system */
 		    
+        TIMELOG_START(tl);
 	if(*isolver==0){
 #ifdef SPOOLES
 	  spooles_solve(fint,&neq[1]);
@@ -447,6 +471,17 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	  pastix_solve(fint,&neq[1],&symmetryflag,&nrhs);
 #endif
 	}
+        else if(*isolver==11){
+#ifdef SX_AURORA
+          sxat_ve_solve(fint);
+#endif
+        }
+        else if(*isolver==12){
+#ifdef SX_AURORA
+          sxat_ve_solve(fint);
+#endif
+        }
+        TIMELOG_END(tl, "solver1 for objectivemain_se");
 	      
 	/* solve the system */	      
 	       	    
@@ -589,6 +624,24 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	    FORTRAN(stop,());
 #endif
 	  }
+          else if(*isolver==11){
+#ifdef SX_AURORA
+            sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+                              symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+            printf("*ERROR in objectivemain_se: the HeteroSolver library is not linked\n\n");
+            FORTRAN(stop,());
+#endif
+          }
+          else if(*isolver==12){
+#ifdef SX_AURORA
+            sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+                              symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+            printf("*ERROR in objectivemain_se: the CG/VE library is not linked\n\n");
+            FORTRAN(stop,());
+#endif
+          }
 	}	
 		
 	/* loop over all design variables */
@@ -613,6 +666,7 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 
 	    /* solve the system */
 			
+            TIMELOG_START(tl);
 	    if(*isolver==0){
 #ifdef SPOOLES
 	      spooles_solve(b,&neq[1]);
@@ -638,6 +692,17 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	      pastix_solve(b,&neq[1],&symmetryflag,&nrhs);
 #endif
 	    }
+            else if(*isolver==11){
+#ifdef SX_AURORA
+              sxat_ve_solve(b);
+#endif
+            }
+            else if(*isolver==12){
+#ifdef SX_AURORA
+              sxat_ve_solve(b);
+#endif
+            }
+            TIMELOG_END(tl, "solver1 for objectivemain_se");
 	  }else{
 		    
 	    NNEW(c,double,*nev);
@@ -778,6 +843,16 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 #ifdef PASTIX
 #endif
 	  }
+          else if(*isolver==11){
+#ifdef SX_AURORA
+            sxat_ve_cleanup();
+#endif
+          }
+          else if(*isolver==12){
+#ifdef SX_AURORA
+            sxat_ve_cleanup();
+#endif
+          }
 	}
 
 	SFREE(temp);SFREE(bfix);SFREE(b);SFREE(inum);
@@ -835,6 +910,7 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 
 	  /* solve the system */
 
+          TIMELOG_START(tl);
 	  if(*isolver==0){
 #ifdef SPOOLES
 	    spooles_solve(b,&neq[1]);
@@ -860,7 +936,17 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	    pastix_solve(b,&neq[1],&symmetryflag,&nrhs);
 #endif
 	  }
-
+          else if(*isolver==11){
+#ifdef SX_AURORA
+            sxat_ve_solve(b);
+#endif
+          }
+          else if(*isolver==12){
+#ifdef SX_AURORA
+            sxat_ve_solve(b);
+#endif
+          }
+          TIMELOG_END(tl, "solver2 for objectivemain_se");
 		    
 	  /* store the answer in temp w.r.t. node and direction
 	     instead of w.r.t. dof */
@@ -901,6 +987,7 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	    
 	/* solve the system */
 	
+        TIMELOG_START(tl);
 	if(*isolver==0){
 #ifdef SPOOLES
 	  spooles_solve(dgdu,&neq[1]);
@@ -926,6 +1013,17 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	  pastix_solve(dgdu,&neq[1],&symmetryflag,&nrhs);
 #endif
 	}
+        else if(*isolver==11){
+#ifdef SX_AURORA
+          sxat_ve_solve(dgdu);
+#endif
+        }
+        else if(*isolver==12){
+#ifdef SX_AURORA
+          sxat_ve_solve(dgdu);
+#endif
+        }
+        TIMELOG_END(tl, "solver3 for objectivemain_se");
 	      
 	/* calculation of total differential */
 	      
@@ -1098,6 +1196,7 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 		
 	  /* solve the system */
 		
+          TIMELOG_START(tl);
 	  if(*isolver==0){
 #ifdef SPOOLES
 	    spooles_solve(b,&neq[1]);
@@ -1123,6 +1222,17 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	    pastix_solve(b,&neq[1],&symmetryflag,&nrhs);
 #endif
 	  }
+          else if(*isolver==11){
+#ifdef SX_AURORA
+            sxat_ve_solve(b);
+#endif
+          }
+          else if(*isolver==12){
+#ifdef SX_AURORA
+            sxat_ve_solve(b);
+#endif
+          }
+          TIMELOG_END(tl, "solver4 for objectivemain_se");
 		
 	  /* calculating the perturbed displacements */
 		
@@ -1382,6 +1492,7 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	    
 	/* solve the system */
 	
+        TIMELOG_START(tl);
 	if(*isolver==0){
 #ifdef SPOOLES
 	  spooles_solve(dgdu,&neq[1]);
@@ -1407,6 +1518,17 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	  pastix_solve(dgdu,&neq[1],&symmetryflag,&nrhs);
 #endif
 	}
+        else if(*isolver==11){
+#ifdef SX_AURORA
+          sxat_ve_solve(dgdu);
+#endif
+        }
+        else if(*isolver==12){
+#ifdef SX_AURORA
+          sxat_ve_solve(dgdu);
+#endif
+        }
+        TIMELOG_END(tl, "solver5 for objectivemain_se");
 	      
 	/* calculation of total differential */
 	      
@@ -1729,6 +1851,7 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	    
       /* solve the system */
 	
+      TIMELOG_START(tl);
       if(*isolver==0){
 #ifdef SPOOLES
 	spooles_solve(dgdu,&neq[1]);
@@ -1754,6 +1877,17 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 	pastix_solve(dgdu,&neq[1],&symmetryflag,&nrhs);
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_solve(dgdu);
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_solve(dgdu);
+#endif
+      }
+      TIMELOG_END(tl, "solver6 for objectivemain_se");
 	      
       /* calculation of total differential */
 	      
@@ -2154,6 +2288,16 @@ void objectivemain_se(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
     }
     else if(*isolver==8){
 #ifdef PASTIX
+#endif
+    }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
 #endif
     }
   }
