@@ -40,6 +40,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void arpackcs(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	      ITG *ne, 

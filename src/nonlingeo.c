@@ -1413,7 +1413,7 @@ void nonlingeo(double **cop, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
 	else if(*isolver==12){
 #ifdef SX_AURORA
 	  sxat_ve_factor(adb, aub, adb, aub, sigma, icol, irow, neq[0], nzs[0],
-			symmetryflag, inputformat, jq, nzs[0], SOLVER_TYPE_SCALING);
+			symmetryflag, inputformat, jq, nzs[0], SOLVER_TYPE_CG);
 
 	  sxat_ve_solve(b);
 #else

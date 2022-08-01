@@ -6,7 +6,7 @@
 # in terminal to run PARDISO with 2 cpus
 # More info in ccx user manual section 2
 
-LIB_PATH=../../..
+LIB_PATH=../lib
 
 WITH_EXODUSII = false
 WITH_MKL = true
@@ -24,8 +24,8 @@ FFLAGS = -Wall $(OPT) $(OPTIONS) -I$(MKL_INCLUDE) -fopenmp
 CFLAGS+= -I $(LIB_PATH)/ARPACK -DARPACK
 
 #SPOOLES
-#CFLAGS+= -I /home/dalab/CalculixBuild/SPOOLES.2.2 -DSPOOLES
-CFLAGS+= -I $(LIB_PATH)/SPOOLES.2.2 -DSPOOLES
+#CFLAGS+= -I /home/dalab/CalculixBuild/SPOOLES -DSPOOLES
+CFLAGS+= -I $(LIB_PATH)/SPOOLES -DSPOOLES
 
 #BLAS and LAPACK
 LDFLAGS= -llapack -lblas
@@ -60,7 +60,9 @@ ifeq ($(WITH_MKL_STATIC),true)
 	CMPLR_PATH = /opt/intel/compilers_and_libraries/linux/lib/intel64
 else
 	# For dynamic link version
-    LDFLAGS += $(shell pkg-config --libs mkl-dynamic-lp64-seq)
+	#LDFLAGS += -L/opt/intel/lib/intel64 -L/opt/intel/mkl/lib/intel64
+	#LDFLAGS += -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5
+	LDFLAGS += $(shell pkg-config --libs mkl-dynamic-lp64-seq)
 endif
 endif
 
@@ -86,8 +88,8 @@ OCCXMAIN = $(SCCXMAIN:.c=.o)
 
 LIBS = \
        $(LIB_PATH)/ARPACK/libarpack_INTEL.a \
-       $(LIB_PATH)/SPOOLES.2.2/MT/src/spoolesMT.a \
-       $(LIB_PATH)/SPOOLES.2.2/spooles.a
+       $(LIB_PATH)/SPOOLES/MT/src/spoolesMT.a \
+       $(LIB_PATH)/SPOOLES/spooles.a
 
 all: ccx_2.19_MT
 
