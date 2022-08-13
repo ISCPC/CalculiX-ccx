@@ -62,7 +62,7 @@ else
 	# For dynamic link version
 	#LDFLAGS += -L/opt/intel/lib/intel64 -L/opt/intel/mkl/lib/intel64
 	#LDFLAGS += -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5
-	LDFLAGS += $(shell pkg-config --libs mkl-dynamic-lp64-seq)
+	LDFLAGS += $(shell pkg-config --libs mkl-dynamic-lp64-iomp)
 endif
 endif
 
