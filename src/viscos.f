@@ -81,9 +81,9 @@
       elseif(isolver.eq.8) then
          solver(1:6)='PASTIX'
       elseif(isolver.eq.11) then
-         solver(1:9)='SX-AUR_HS'
+         solver(1:7)='SXAT_HS'
       elseif(isolver.eq.12) then
-         solver(1:14)='SX-AUR_SCALING'
+         solver(1:12)='SXAT_SCALING'
       endif
 !
       do i=2,n
@@ -137,6 +137,10 @@
          isolver=7
       elseif(solver(1:6).eq.'PASTIX') then
          isolver=8
+      elseif(solver(1:7).eq.'SXAT_HS') then
+         isolver=11
+      elseif(solver(1:12).eq.'SXAT_SCALING') then
+         isolver=12
       elseif(solver(1:9).eq.'SX-AUR_HS') then
          isolver=11
       elseif(solver(1:14).eq.'SX-AUR_SCALING') then

@@ -375,6 +375,10 @@ void ini_cal(char *jobnamec,char *output,char *fneig,char *kind1,char *kind2,
         *isolver=7;
     } else if (strcmp(env_solver, "PASTIX") == 0) {
         *isolver=8;
+    } else if (strcmp(env_solver, "SXAT_HS") == 0) {
+        *isolver=11;
+    } else if (strcmp(env_solver, "SXAT_SCALING") == 0) {
+        *isolver=12;
     } else if (strcmp(env_solver, "SX-AUR_HS") == 0) {
         *isolver=11;
     } else if (strcmp(env_solver, "SX-AUR_SCALING") == 0) {
