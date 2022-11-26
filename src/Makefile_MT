@@ -19,6 +19,11 @@ OPT = -O2
 CFLAGS = -Wall $(OPT) -std=gnu99 -fopenmp -DARCH="Linux" -DMATRIXSTORAGE -DUSE_MT=1 -DMKL_LP64 -D_TIMELOG
 FFLAGS = -Wall $(OPT) $(OPTIONS) -I$(MKL_INCLUDE) -fopenmp
 
+GFORTVERSION = $(shell expr `gfortran -dumpversion | cut -f1 -d.` \>= 10)
+ifeq ($(GFORTVERSION),1)
+FFLAGS += -fallow-argument-mismatch
+endif
+
 #ARPACK
 #CFLAGS+= -I /home/dalab/CalculixBuild/ARPACK -DARPACK
 CFLAGS+= -I $(LIB_PATH)/ARPACK -DARPACK

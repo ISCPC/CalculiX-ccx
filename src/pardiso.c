@@ -29,6 +29,7 @@ double *aupardiso=NULL;
 /* double dparm[64];  not used */
 ITG mthread_mkl=0;
 /* char envMKL[32];   moved to pardiso.h */
+char envMKL[32];
 
 void pardiso_factor(double *ad, double *au, double *adb, double *aub, 
 		    double *sigma,ITG *icol, ITG *irow, 

@@ -34,4 +34,4 @@ void FORTRAN(pardiso,(long long *pt,ITG *maxfct,ITG *mnum,ITG *mtype,ITG *phase,
                    ITG *perm,ITG *nrhs,ITG *iparm,ITG *msglvl,double *b,
                    double *x,ITG *error));
 
-char envMKL[32];
+extern char envMKL[32];
