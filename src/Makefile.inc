@@ -1008,6 +1008,10 @@ dyna.c \
 dynboun.c \
 electromagnetics.c \
 elementcpuload.c \
+exo.c \
+exoselect.c \
+exosetfind.c \
+exovector.c \
 expand.c \
 external.c \
 feasibledirection.c \

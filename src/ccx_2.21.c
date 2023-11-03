@@ -136,6 +136,14 @@ int main(int argc,char *argv[])
       }
       strcpy2(jobnamec,argv[1],132);
       strcpy1(jobnamef,argv[1],132);}
+
+#ifdef EXODUSII
+    strcpy1(output,"asc ",4);
+    for(i=1;i<argc;i++){
+      if(strcmp1(argv[i],"-o")==0){
+    strcpy1(output,argv[i+1],5);break;}
+      }
+#endif
   }
 
   putenv("CCX_JOBNAME_GETJOBNAME=jobnamec");
