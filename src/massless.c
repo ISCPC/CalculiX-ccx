@@ -35,6 +35,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void massless(ITG *kslav,ITG *lslav,ITG *ktot,ITG *ltot,double *au,double *ad,
 	      double *auc,double *adc,
@@ -148,6 +152,7 @@ void massless(ITG *kslav,ITG *lslav,ITG *ktot,ITG *ltot,double *au,double *ad,
      of a linear calculation */
 
   if((*masslesslinear==0)||(*iinc==1)){
+    TIMELOG_START(tl);
     if(*isolver==0){
 #ifdef SPOOLES
       spooles_factor_rad(adbb,aubb,adbbb,aubbb,&sigma,icolbb,irowbb,
@@ -175,7 +180,25 @@ void massless(ITG *kslav,ITG *lslav,ITG *ktot,ITG *ltot,double *au,double *ad,
       printf(" *ERROR in massless: the PASTIX library is not linked\n\n");
       FORTRAN(stop,());
 #endif
+    }else if(*isolver==11){
+#ifdef SX_AURORA
+      printf("*ERROR in massless: the HeterSolver library is not supported\n\n");
+      FORTRAN(stop,());
+#else
+      printf("*ERROR in massless: the HeterSolver library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }else if(*isolver==12){
+#ifdef SX_AURORA
+      printf("*ERROR in massless: the CG/VE library is not supported\n\n");
+      FORTRAN(stop,());
+#else
+      printf("*ERROR in massless: the CG/VE library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
     }
+    TIMELOG_END(tl, "solver for massless");
+
     SFREE(aubb);SFREE(adbb);SFREE(irowbb);SFREE(icolbb);SFREE(jqbb);
   }
 

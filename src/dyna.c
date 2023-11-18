@@ -35,6 +35,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void dyna(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG *ne,
 	  ITG **nodebounp,ITG **ndirbounp,double **xbounp,ITG *nboun,
@@ -1144,6 +1148,24 @@ void dyna(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG *ne,
       FORTRAN(stop,());
 #endif
     }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+                       symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+      printf("*ERROR in dyna: the HeterSolver library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+                       symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+      printf("*ERROR in dyna: the CG/VE library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
 
     NNEW(bact,double,neq[1]);
     NNEW(bmin,double,neq[1]);
@@ -1968,6 +1990,16 @@ void dyna(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG *ne,
     }
     else if(*isolver==8){
 #ifdef PASTIX
+#endif
+    }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
 #endif
     }
     SFREE(bact);SFREE(bmin);SFREE(bv);SFREE(bprev);SFREE(bdiff);

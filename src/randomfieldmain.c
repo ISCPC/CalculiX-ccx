@@ -40,6 +40,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 
 void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
@@ -78,6 +82,8 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
     *add=NULL,*aud=NULL,sigma=0,*rhs=NULL,*vector=NULL,*adbd=NULL,
     *aubd=NULL,*auc=NULL,delta,time=0.;
 	         
+  TIMELOG(tl);
+
   reliability=physcon[10];
   corrlen=physcon[11];
 
@@ -262,6 +268,24 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
       FORTRAN(stop,());
 #endif
     }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_factor(add, aud, adbd, aubd, sigma, icold, irowd, *ndesibou, nzsd,
+          symmetryflag, inputformat, jqd, nzsd, SOLVER_TYPE_HS);
+#else
+      printf("*ERROR in randomfieldmain: the HeterSolver library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_factor(add, aud, adbd, aubd, sigma, icold, irowd, *ndesibou, nzsd,
+          symmetryflag, inputformat, jqd, nzsd, SOLVER_TYPE_CG);
+#else
+      printf("*ERROR in randomfieldmain: the CG/VE library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
 
     NNEW(rhs,double,*ndesibou);
     NNEW(vector,double,*ndesi);
@@ -283,6 +307,7 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
 
       /* solve the system */
 	    
+      TIMELOG_START(tl);
       if(*isolver==0){
 #ifdef SPOOLES
 	spooles_solve(rhs,ndesibou);
@@ -308,6 +333,17 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
 	pastix_solve(rhs,ndesibou,&symmetryflag,&nrhs);
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_solve(rhs);
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_solve(rhs);
+#endif
+      }
+      TIMELOG_END(tl, "solver1 for randomfieldmain");
 	
       /* carry out matrix multiplications */
 	    
@@ -340,6 +376,16 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
     }
     else if(*isolver==8){
 #ifdef PASTIX
+#endif
+    }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
 #endif
     }
 
@@ -435,6 +481,24 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
     FORTRAN(stop,());
 #endif
   }
+  else if(*isolver==11){
+#ifdef SX_AURORA
+    sxat_ve_factor(ad, au, adb, aub, trace, icols, irows, *ndesi, nzss,
+                       symmetryflag, inputformat, jqs, nzss, SOLVER_TYPE_HS);
+#else
+    printf("*ERROR in randomfieldmain: the HeterSolver library is not linked\n\n");
+    FORTRAN(stop,());
+#endif
+  }
+  else if(*isolver==12){
+#ifdef SX_AURORA
+    sxat_ve_factor(ad, au, adb, aub, trace, icols, irows, *ndesi, nzss,
+                       symmetryflag, inputformat, jqs, nzss, SOLVER_TYPE_CG);
+#else
+    printf("*ERROR in randomfieldmain: the CG/VE library is not linked\n\n");
+    FORTRAN(stop,());
+#endif
+  }
   
   /* calculating the eigenvalues and eigenmodes */
   
@@ -493,6 +557,7 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
 	/* solve the linear equation system  */
 
 	if(ido==-1){
+    TIMELOG_START(tl);
 	  if(*isolver==0){
 #ifdef SPOOLES
 	    spooles_solve(temp_array,ndesi);
@@ -522,12 +587,24 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
 #endif
 #endif
 	  }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_solve(temp_array);
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_solve(temp_array);
+#endif
+    }
+    TIMELOG_END(tl, "solver2-1 for randomfieldmain");
 	   
 	  for(jrow=0;jrow<*ndesi;jrow++){
 	    workd[ipntr[1]-1+jrow]=temp_array[jrow];
 	  }
 	}
 	else if(ido==1){
+    TIMELOG_START(tl);
 	  if(*isolver==0){
 #ifdef SPOOLES
 	    spooles_solve(&workd[ipntr[2]-1],ndesi);
@@ -557,6 +634,17 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
 #endif
 #endif
 	  }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_solve(&workd[ipntr[2]-1]);
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_solve(&workd[ipntr[2]-1]);
+#endif
+    }
+    TIMELOG_END(tl, "solver2-2 for randomfieldmain");
 	   
 	  for(jrow=0;jrow<*ndesi;jrow++){
 	    workd[ipntr[1]-1+jrow]=workd[ipntr[2]-1+jrow];
@@ -733,6 +821,16 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
 #ifdef PARDISO
     pardiso_cleanup(ndesi,&symmetryflag,&inputformat);
 #endif
+#endif
+  }
+  else if(*isolver==11){
+#ifdef SX_AURORA
+    sxat_ve_cleanup();
+#endif
+  }
+  else if(*isolver==12){
+#ifdef SX_AURORA
+    sxat_ve_cleanup();
 #endif
   }
 

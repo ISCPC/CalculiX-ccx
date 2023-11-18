@@ -36,6 +36,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG *ne,
 		 ITG **nodebounp,ITG **ndirbounp,double **xbounp,ITG *nboun,
@@ -141,6 +145,8 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
 #ifdef SGI
   ITG token;
 #endif
+
+  TIMELOG(tl);
 
   co=*cop;kon=*konp;ipkon=*ipkonp;lakon=*lakonp;ielmat=*ielmatp;
   ielorien=*ielorienp;inotr=*inotrp;nodeboun=*nodebounp;
@@ -1165,6 +1171,24 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
 	FORTRAN(stop,());
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+			symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+        printf("*ERROR in steadystate: the HeterSolver library is not linked\n\n");
+        FORTRAN(stop,());
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+			symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+        printf("*ERROR in steadystate: the CG/VE library is not linked\n\n");
+        FORTRAN(stop,());
+#endif
+      }
     }
       
     for(l=0;l<ndatatot;l=l+*jout){
@@ -1483,6 +1507,7 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
 
 	  /* solve equation system */
 		
+      TIMELOG_START(tl);
 	  if(*isolver==0){
 #ifdef SPOOLES
 	    spooles_solve(ubr,&neq[1]);
@@ -1508,6 +1533,17 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
 	    pastix_solve(ubr,&neq[1],&symmetryflag,&nrhs);
 #endif
 	  }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_solve(ubr);
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_solve(ubr);
+#endif
+      }
+      TIMELOG_END(tl, "solver1 for steadystate");
 	}else{
 
 	  /* rigid body mode: all displacements are equal */
@@ -1681,6 +1717,17 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
 	    pastix_solve(ubi,&neq[1],&symmetryflag,&nrhs);
 #endif
 	  }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_solve(ubi);
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_solve(ubi);
+#endif
+      }
+      TIMELOG_END(tl, "solver2 for steadystate");
 	}else{
 
 	  /* rigid body mode: all displacements are equal */
@@ -2370,6 +2417,16 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
 #ifdef PASTIX
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_cleanup();
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_cleanup();
+#endif
+      }
       SFREE(xbounr);SFREE(xbouni);SFREE(fr);SFREE(fi);SFREE(ubr);SFREE(ubi);
       SFREE(mubr);SFREE(mubi);
     }
@@ -2583,6 +2640,24 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
 #else
 	printf(" *ERROR in steadystate: the PASTIX library is not linked\n\n");
 	FORTRAN(stop,());
+#endif
+      }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+			symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+        printf("*ERROR in steadystate: the HeterSolver library is not linked\n\n");
+        FORTRAN(stop,());
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
+			symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+        printf("*ERROR in steadystate: the CG/VE library is not linked\n\n");
+        FORTRAN(stop,());
 #endif
       }
 
@@ -2970,6 +3045,17 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
 	      pastix_solve(ubr,&neq[1],&symmetryflag,&nrhs);
 #endif
 	    }
+        else if(*isolver==11){
+#ifdef SX_AURORA
+          sxat_ve_solve(ubr);
+#endif
+        }
+        else if(*isolver==12){
+#ifdef SX_AURORA
+          sxat_ve_solve(ubr);
+#endif
+        }
+        TIMELOG_END(tl, "solver3 for steadystate");
 	  }else{
 		    
 	    /* rigid body mode: all displacements are equal */
@@ -3404,6 +3490,16 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
       }
       else if(*isolver==8){
 #ifdef PASTIX
+#endif
+      }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_cleanup();
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_cleanup();
 #endif
       }
     }

@@ -39,6 +39,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void arpackbu(double *co, ITG *nk, ITG *kon, ITG *ipkon, char *lakon,
 	      ITG *ne, 
@@ -114,7 +118,9 @@ void arpackbu(double *co, ITG *nk, ITG *kon, ITG *ipkon, char *lakon,
 #ifdef SGI
   ITG token;
 #endif
- 
+
+  TIMELOG(tl);
+
   ne0=*ne;
 
   /* copying the frequency parameters */
@@ -339,6 +345,25 @@ void arpackbu(double *co, ITG *nk, ITG *kon, ITG *ipkon, char *lakon,
     FORTRAN(stop,());
 #endif    
   }
+else if(*isolver==11){
+#ifdef SX_AURORA
+    sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+               symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+    printf("*ERROR in arpackbu: the HeterSolver library is not linked\n\n");
+    FORTRAN(stop,());
+#endif
+  }
+  else if(*isolver==12){
+#ifdef SX_AURORA
+    sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+               symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+    printf("*ERROR in arpackbu: the CG/VE library is not linked\n\n");
+    FORTRAN(stop,());
+#endif
+  }
+  TIMELOG_END(tl, "solver for arpackbu1");
 
   /* calculating the displacements and the stresses and storing */
   /* the results in frd format for each valid eigenmode */
@@ -569,7 +594,24 @@ void arpackbu(double *co, ITG *nk, ITG *kon, ITG *ipkon, char *lakon,
       FORTRAN(stop,());
 #endif
     }
-  
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+                   symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+      printf("*ERROR in arpack: the HeterSolver library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+                   symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+      printf("*ERROR in arpack: the CG/VE library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
 
     /* calculating the bucking factors and buckling modes */
 
@@ -605,6 +647,7 @@ void arpackbu(double *co, ITG *nk, ITG *kon, ITG *ipkon, char *lakon,
 
 	if(ido==-1){
 	  if(*isolver==0){
+      TIMELOG_START(tl);
 #ifdef SPOOLES
 	    spooles_solve(temp_array,&neq[0]);
 #endif
@@ -635,11 +678,24 @@ void arpackbu(double *co, ITG *nk, ITG *kon, ITG *ipkon, char *lakon,
 #endif
 #endif
 	  }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_solve(temp_array);
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_solve(temp_array);
+#endif
+    }
+    TIMELOG_END(tl, "solver2-1 for arpackbu");
+
 	  for(jrow=0;jrow<neq[0];jrow++){
 	    workd[ipntr[1]-1+jrow]=temp_array[jrow];
 	  }
 	}
 	else if(ido==1){
+    TIMELOG_START(tl);
 	  if(*isolver==0){
 #ifdef SPOOLES
 	    spooles_solve(&workd[ipntr[2]-1],&neq[0]);
@@ -673,6 +729,18 @@ void arpackbu(double *co, ITG *nk, ITG *kon, ITG *ipkon, char *lakon,
 #endif
 #endif
 	  }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_solve(&workd[ipntr[2]-1]);
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_solve(&workd[ipntr[2]-1]);
+#endif
+    }
+    TIMELOG_END(tl, "solver2-2 for arpackbu");
+
 	  for(jrow=0;jrow<neq[0];jrow++){
 	    workd[ipntr[1]-1+jrow]=workd[ipntr[2]-1+jrow];
 	  }
@@ -722,7 +790,17 @@ void arpackbu(double *co, ITG *nk, ITG *kon, ITG *ipkon, char *lakon,
 #endif
 #endif
     }
-
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
+#endif
+    }
+    
     if(info!=0){
       printf(" *ERROR in arpackbu: info=%" ITGFORMAT "\n",info);
       printf("       # of converged eigenvalues=%" ITGFORMAT "\n\n",iparam[4]);

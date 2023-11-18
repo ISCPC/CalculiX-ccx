@@ -36,6 +36,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 static char *lakon1,*sideload1,*sideface1,*labmpc1;
 
@@ -145,6 +149,8 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
 #ifdef SGI
   ITG token;
 #endif
+
+  TIMELOG(tl);
 
   /* open frd-file for fluids */
 
@@ -409,6 +415,24 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
 	FORTRAN(stop,());
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_factor(adbp, aubp, adb, aub, sigma, icolp, irowp, neqp, nzsp,
+                   symmetryflag, inputformat, jqp, nzsp, SOLVER_TYPE_HS);
+#else
+        printf("*ERROR in compfluid: the HeterSolver library is not linked\n\n");
+        FORTRAN(stop,());
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_factor(adbp, aubp, adb, aub, sigma, icolp, irowp, neqp, nzsp,
+                   symmetryflag, inputformat, jqp, nzsp, SOLVER_TYPE_CG);
+#else
+        printf("*ERROR in compfluid: the CG/VE library is not linked\n\n");
+        FORTRAN(stop,());
+#endif
+       }
       
     }
   }
@@ -746,6 +770,7 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
 
 	/* solving the system of equations (only for liquids) */
 
+  TIMELOG_START(tl);
 	if(*isolver==0){
 #ifdef SPOOLES
 	  spooles_solve(&b1[4**nk],&neqp);
@@ -771,6 +796,17 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
 	  pastix_solve(&b1[4**nk],&neqp,&symmetryflag,&nrhs);
 #endif
 	}
+  else if(*isolver==11){
+#ifdef SX_AURORA
+    sxat_ve_solve(&b1[4**nk]);
+#endif
+  }
+  else if(*isolver==12){
+#ifdef SX_AURORA
+    sxat_ve_solve(&b1[4**nk]);
+#endif
+  }
+  TIMELOG_END(tl, "solver for compfluid");
 
 	/* copying the solution into field sol */
 
@@ -1194,6 +1230,16 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
     else if(*isolver==7){
 #ifdef PARDISO
       pardiso_cleanup(&neqp,&symmetryflag,&inputformat);
+#endif
+    }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
 #endif
     }
   }

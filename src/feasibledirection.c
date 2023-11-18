@@ -41,6 +41,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void feasibledirection(ITG *nobject,char **objectsetp,double **dgdxglobp,
 		       double *g0,ITG *ndesi,ITG *nodedesi,ITG *nk,ITG *isolver,

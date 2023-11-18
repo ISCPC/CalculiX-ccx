@@ -12,6 +12,7 @@ WITH_EXODUSII = false
 WITH_MKL = true
 WITH_MKL_STATIC = false
 WITH_AURORA = false
+VESOLVERPATH = /opt/local
 
 OPT = -O2
 #OPT = -Ofast -march=native

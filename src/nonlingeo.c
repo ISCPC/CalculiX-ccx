@@ -35,6 +35,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 #define max(a,b) ((a) >= (b) ? (a) : (b))
 
@@ -176,6 +180,10 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
     *qb=NULL,*aloc=NULL,dtmin,*fric=NULL,*aubi=NULL,*auib=NULL;
 	 
   FILE *f1;
+
+  TIMELOG(tl1);
+  TIMELOG(tl2);
+  TIMELOG(tl3);
 
   if(filab[4]!=' ') ne1d2d=1;
 
@@ -1234,6 +1242,24 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	FORTRAN(stop,());
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+	sxat_ve_factor(adb, aub, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+			   symmetryflag, inputformat, jq, nzs[0], SOLVER_TYPE_HS);
+#else
+	printf(" *ERROR in nonlingeo: the HeteroSOlver library is not linked\n\n");
+	FORTRAN(stop,());
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+	sxat_ve_factor(adb, aub, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+			   symmetryflag, inputformat, jq, nzs[0], SOLVER_TYPE_CG);
+#else
+	printf(" *ERROR in nonlingeo: the CG/VE library is not linked\n\n");
+	FORTRAN(stop,());
+#endif
+      }
 
       // Storing contact force vector initial solution
 
@@ -1268,6 +1294,7 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
       for(k=0;k<nzs[0];++k){
 	au[k]=aub[k]+scal1*au[k];
       }
+      TIMELOG_START(tl3);
       if(*isolver==0){
 #ifdef SPOOLES
 	spooles(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0],
@@ -1315,6 +1342,25 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	FORTRAN(stop,());
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+	sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+		    symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+	printf(" *ERROR in nonlingeo: the HeteroSolver library is not linked\n\n");
+	FORTRAN(stop,());
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+	sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+		    symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+	printf(" *ERROR in nonlingeo: the CG/VE library is not linked\n\n");
+	FORTRAN(stop,());
+#endif
+      }
+      TIMELOG_END(tl3, "solver1-1 for nonlingeo");
     }
       
     else{
@@ -1335,6 +1381,7 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	/* explicit dynamics with selective mass scaling */
 
 	inputformat=0;
+    TIMELOG_START(tl3);
 	if(*isolver==0){
 #ifdef SPOOLES
 	  spooles_factor(adb,aub,adb,aub,&sigma,icol,irow,&neq[0],&nzs[0],
@@ -1386,6 +1433,29 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	  FORTRAN(stop,());
 #endif
 	}
+	else if(*isolver==11){
+#ifdef SX_AURORA
+	  sxat_ve_factor(adb, aub, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+			symmetryflag, inputformat, jq, nzs[0], SOLVER_TYPE_HS);
+
+	  sxat_ve_solve(b);
+#else
+	  printf("*ERROR in arpack: the HeteroSolver library is not linked\n\n");
+	  FORTRAN(stop,());
+#endif
+	}
+	else if(*isolver==12){
+#ifdef SX_AURORA
+	  sxat_ve_factor(adb, aub, adb, aub, sigma, icol, irow, neq[0], nzs[0],
+			symmetryflag, inputformat, jq, nzs[0], SOLVER_TYPE_CG);
+
+	  sxat_ve_solve(b);
+#else
+	  printf("*ERROR in arpack: the CG/VE library is not linked\n\n");
+	  FORTRAN(stop,());
+#endif
+	}
+    TIMELOG_END(tl3, "solver1-2 for nonlingeo");
       }
     }
       
@@ -1510,6 +1580,7 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
   
   while((1.-theta>1.e-6)||(negpres==1)){
       
+    TIMELOG_START(tl1);
     if(icutb==0){
 	  
       /* previous increment converged: update the initial values */
@@ -2201,6 +2272,7 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
     }
 
     while(icntrl==0){
+      TIMELOG_START(tl2);
 
 #ifdef COMPANY
       FORTRAN(uiter,(&iit));
@@ -2831,6 +2903,7 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	for(k=0;k<neq[1]+1;++k){printf("jq=%" ITGFORMAT ",%d\n",k,jq[k]);}
 	for(k=0;k<neq[1];++k){printf("icol=%" ITGFORMAT ",%d %d\n",k,icol[k],jq[k+1]-jq[k]);}*/
       
+    TIMELOG_START(tl3);
 	if(*isolver==0){
 #ifdef SPOOLES
 	  if(*ithermal<2){
@@ -2984,6 +3057,47 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	  FORTRAN(stop,());
 #endif
 	}
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      if(*ithermal<2){
+        sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+            symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+      } else if((*ithermal==2)&&(uncoupled)) {
+        n1=neq[1]-neq[0];
+        n2=nzs[1]-nzs[0];
+        sxat_ve_main(&ad[neq[0]], &au[nzs[0]], &adb[neq[0]], &aub[nzs[0]],
+            sigma, &b[neq[0]], &icol[neq[0]], iruc, n1, n2,
+            symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+      } else {
+        sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[1], nzs[1],
+            symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+      }
+#else
+      printf(" *ERROR in nonlingeo: the HeteroSolver library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      if(*ithermal<2){
+        sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+            symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+      } else if((*ithermal==2)&&(uncoupled)) {
+        n1=neq[1]-neq[0];
+        n2=nzs[1]-nzs[0];
+        sxat_ve_main(&ad[neq[0]], &au[nzs[0]], &adb[neq[0]], &aub[nzs[0]],
+            sigma, &b[neq[0]], &icol[neq[0]], iruc, n1, n2,
+            symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+      } else {
+        sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[1], nzs[1],
+            symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+      }
+#else
+      printf(" *ERROR in nonlingeo: the CG/VE library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    TIMELOG_END(tl3, "solver2-1 for nonlingeo");
 	  
 	if(*mortar<=1){
 	  if(isensitivity){
@@ -3011,6 +3125,7 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	}
 	else{
 	  if(*ithermal!=2){
+        TIMELOG_START(tl3);
 	    if(*isolver==0){
 #ifdef SPOOLES
 	      spooles_solve(b,&neq[0]);
@@ -3036,6 +3151,17 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	      pastix_solve(b,&neq[0],&symmetryflag,&nrhs);
 #endif
 	    }
+        else if(*isolver==11){
+#ifdef SX_AURORA
+          sxat_ve_solve(b);
+#endif
+        }
+        else if(*isolver==12){
+#ifdef SX_AURORA
+          sxat_ve_solve(b);
+#endif
+        }
+        TIMELOG_END(tl3, "solver2-2 for nonlingeo");
 	    if(*mortar==-1){
 	      if(iinc==1){
 		for(i=0;i<neqtot;i++){
@@ -3450,11 +3576,13 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	icntrl=1;
 	icutb=0;   
 
+#if 0  /* disable for compatibility of *.dat output to the original*/
     /* Only write a result file every 1000 increments (until
        such time as time points can be fixed) */
     if((iinc/1000)*1000!=iinc){
       jprint = 0;
     }
+#endif
 
 	theta=theta+dtheta;  
 	if(dtheta>=1.-theta){
@@ -3464,14 +3592,17 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
 	  }
 	  dtheta=1.-theta;
 	  dthetaref=dtheta;
+#if 0  /* disable for compatibility of *.dat output to the original*/
 	  // Ensure the result is saved
       jprint = 1;
+#endif
 	}
 	iflagact=0;
       }
 
       if(*mortar==-1){SFREE(auw);SFREE(jqw);SFREE(iroww);}
       
+      TIMELOG_END(tl2, "iteration Loop");
     }
 
     if(*nmethod!=4)SFREE(resold);
@@ -3806,6 +3937,7 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
       if(strcmp1(&filab[2697],"ME  ")==0) SFREE(emn);
     }
     
+    TIMELOG_END(tl1, "Increment Loop");
   }
 
   /*********************************************************/
@@ -4090,6 +4222,16 @@ void nonlingeo(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
       }
       else if(*isolver==8){
 #ifdef PASTIX
+#endif
+      }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+       sxat_ve_cleanup();
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+       sxat_ve_cleanup();
 #endif
       }
     }

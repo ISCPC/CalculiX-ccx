@@ -41,6 +41,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 void gradientprojection(ITG *nobject,char *objectset,double *dgdxglob,
 			double *g0,ITG *ndesi,ITG *nodedesi,ITG *nk,
@@ -50,6 +54,8 @@ void gradientprojection(ITG *nobject,char *objectset,double *dgdxglob,
 			double *objnorm,ITG *ipoacti,ITG *iconstacti,
 			ITG *inameacti,ITG *nnlconst,ITG *ne2d){
                
+  TIMELOG(tl);
+
   /* finding a feasible direction based on the sensitivity information */
    
   ITG nzss,*mast1=NULL,*irows=NULL,*icols=NULL,*jqs=NULL,*ipointer=NULL,
@@ -163,7 +169,24 @@ void gradientprojection(ITG *nobject,char *objectset,double *dgdxglob,
       FORTRAN(stop,());
 #endif
     }
-        
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_factor(ad, au, adb, aub, sigma, icols, irows, *nactive, nzss,
+		     symmetryflag, inputformat, jqs, nzss, SOLVER_TYPE_HS);
+#else
+      printf("*ERROR in projectgrad: the HeteroSolver library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_factor(ad, au, adb, aub, sigma, icols, irows, *nactive, nzss,
+		     symmetryflag, inputformat, jqs, nzss, SOLVER_TYPE_CG);
+#else
+      printf("*ERROR in projectgrad: the HeteroSolver library is not linked\n\n");
+      FORTRAN(stop,());
+#endif
+    }        
     /* solve the system nactive-times */
 
     for(i=0;i<*nactive;i++){
@@ -185,6 +208,7 @@ void gradientprojection(ITG *nobject,char *objectset,double *dgdxglob,
             
       /* solve the system */
             
+      TIMELOG_START(tl);
       if(*isolver==0){
 #ifdef SPOOLES
         spooles_solve(rhs,nactive);
@@ -210,6 +234,17 @@ void gradientprojection(ITG *nobject,char *objectset,double *dgdxglob,
         pastix_solve(rhs,nactive,&symmetryflag,&nrhs);
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+        sxat_ve_solve(rhs);
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+        sxat_ve_solve(rhs);
+#endif
+      }
+      TIMELOG_END(tl, "solver1 for steadystate");
             
       for(i=0;i<*ndesi;i++){
         vector[i]=0.00;
@@ -246,6 +281,16 @@ void gradientprojection(ITG *nobject,char *objectset,double *dgdxglob,
     }
     else if(*isolver==8){
 #ifdef PASTIX
+#endif
+    }
+    else if(*isolver==11){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
+#endif
+    }
+    else if(*isolver==12){
+#ifdef SX_AURORA
+      sxat_ve_cleanup();
 #endif
     }
 

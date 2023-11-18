@@ -50,3 +50,4 @@ void FORTRAN(pardiso,(long long *pt,ITG *maxfct,ITG *mnum,ITG *mtype,ITG *phase,
                    double *x,ITG *error));
 
 //char envMKL[32];
+extern char envMKL[32];

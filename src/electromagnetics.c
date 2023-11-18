@@ -34,6 +34,10 @@
 #ifdef PASTIX
 #include "pastix.h"
 #endif
+#ifdef SX_AURORA
+#include "sxat.h"
+#endif
+#include "timelog.h"
 
 
 void electromagnetics(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,
@@ -151,6 +155,8 @@ void electromagnetics(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,
 #ifdef SGI
   ITG token;
 #endif
+
+  TIMELOG(tl);
 
   num_cpus=0;
   sys_cpus=0;
@@ -559,6 +565,7 @@ void electromagnetics(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,
     b[k]=fext[k]-f[k];
   }
   
+  TIMELOG_START(tl);
   if(*isolver==0){
 #ifdef SPOOLES
     spooles(ad,au,adb,aub,&sigma,b,icol,irow,&neq[1],&nzs[1],
@@ -606,6 +613,25 @@ void electromagnetics(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,
     FORTRAN(stop,());
 #endif
   }
+  else if(*isolver==11){
+#ifdef SX_AURORA
+    sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[1], nzs[1],
+               symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+#else
+    printf("*ERROR in electromagnetics: the HeterSolver library is not linked\n\n");
+    FORTRAN(stop,());
+#endif
+  }
+  else if(*isolver==12){
+#ifdef SX_AURORA
+    sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[1], nzs[1],
+               symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+#else
+    printf("*ERROR in electromagnetics: the CG/VE library is not linked\n\n");
+    FORTRAN(stop,());
+#endif
+  }
+  TIMELOG_END(tl, "solver for electromagnetics1");
 
   SFREE(au);SFREE(ad);
 
@@ -1311,6 +1337,7 @@ void electromagnetics(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,
       FORTRAN(preconditioning,(ad,au,b,&neq[1],irow,jq,adaux));
 
 	  
+      TIMELOG_START(tl);
       if(*isolver==0){
 #ifdef SPOOLES
 	if(*ithermal<2){
@@ -1389,6 +1416,35 @@ void electromagnetics(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,
 	FORTRAN(stop,());
 #endif
       }
+      else if(*isolver==11){
+#ifdef SX_AURORA
+       if(*ithermal<2){
+         sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+                   symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+       } else {
+         sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[1], nzs[1],
+                   symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
+       }
+#else
+       printf("*ERROR in electromagnetics: the HeterSolver library is not linked\n\n");
+       FORTRAN(stop,());
+#endif
+      }
+      else if(*isolver==12){
+#ifdef SX_AURORA
+       if(*ithermal<2){
+         sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
+                   symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+       } else {
+         sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[1], nzs[1],
+                   symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_CG);
+       }
+#else
+       printf("*ERROR in electromagnetics: the CG/VE library is not linked\n\n");
+       FORTRAN(stop,());
+#endif
+      }
+      TIMELOG_END(tl, "solver for electromagnetics2");
 
       SFREE(au);SFREE(ad);
 

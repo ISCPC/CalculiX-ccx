@@ -47,6 +47,7 @@ void ini_cal(char *jobnamec,char *output,char *fneig,char *kind1,char *kind2,
   /* used for initialization and re-initialization */
   
   ITG i;
+  char* env_solver;
 
   /* file names */
   
@@ -356,6 +357,33 @@ void ini_cal(char *jobnamec,char *output,char *fneig,char *kind1,char *kind2,
 #else
   *isolver=3;
 #endif
+  
+  env_solver = getenv("CCX_DEFAULT_SOLVER");
+  if(env_solver)  {
+    if (strcmp(env_solver, "SPOOLES") == 0) {
+        *isolver=0;
+    } else if (strcmp(env_solver, "ITERATIVESCALING") == 0) {
+        *isolver=2;
+    } else if (strcmp(env_solver, "ITERATIVECHOLESKY") == 0) {
+        *isolver=3;
+    } else if (strcmp(env_solver, "SGI") == 0) {
+        *isolver=4;
+    } else if (strcmp(env_solver, "TAUS") == 0) {
+        *isolver=5;
+    } else if (strcmp(env_solver, "PARDISO") == 0) {
+        *isolver=7;
+    } else if (strcmp(env_solver, "PASTIX") == 0) {
+        *isolver=8;
+    } else if (strcmp(env_solver, "SXAT_HS") == 0) {
+        *isolver=11;
+    } else if (strcmp(env_solver, "SXAT_SCALING") == 0) {
+        *isolver=12;
+    } else if (strcmp(env_solver, "SX-AUR_HS") == 0) {
+        *isolver=11;
+    } else if (strcmp(env_solver, "SX-AUR_SCALING") == 0) {
+        *isolver=12;
+    }
+  }
   
   return;
 }
