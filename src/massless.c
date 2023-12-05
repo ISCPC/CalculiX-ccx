@@ -66,6 +66,8 @@ void massless(ITG *kslav,ITG *lslav,ITG *ktot,ITG *ltot,double *au,double *ad,
     *al=NULL,*alnew=NULL,*eps_al=NULL,*rhs=NULL,*aubi=NULL,
     *auib=NULL,omega,*alocold=NULL,*ddisp=NULL;
 
+  TIMELOG(tl);
+
   jqbi=*jqbip;aubi=*aubip;irowbi=*irowbip;jqib=*jqibp;auib=*auibp;
   irowib=*irowibp;
 
