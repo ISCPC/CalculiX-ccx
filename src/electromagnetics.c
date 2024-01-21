@@ -618,7 +618,7 @@ void electromagnetics(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,
     sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[1], nzs[1],
                symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
-    printf("*ERROR in electromagnetics: the HeterSolver library is not linked\n\n");
+    printf("*ERROR in electromagnetics: the HeteroSolver library is not linked\n\n");
     FORTRAN(stop,());
 #endif
   }
@@ -1426,7 +1426,7 @@ void electromagnetics(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,
                    symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
        }
 #else
-       printf("*ERROR in electromagnetics: the HeterSolver library is not linked\n\n");
+       printf("*ERROR in electromagnetics: the HeteroSolver library is not linked\n\n");
        FORTRAN(stop,());
 #endif
       }

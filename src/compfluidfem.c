@@ -420,7 +420,7 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
         sxat_ve_factor(adbp, aubp, adb, aub, sigma, icolp, irowp, neqp, nzsp,
                    symmetryflag, inputformat, jqp, nzsp, SOLVER_TYPE_HS);
 #else
-        printf("*ERROR in compfluid: the HeterSolver library is not linked\n\n");
+        printf("*ERROR in compfluid: the HeteroSolver library is not linked\n\n");
         FORTRAN(stop,());
 #endif
       }

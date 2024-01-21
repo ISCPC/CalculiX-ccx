@@ -1176,7 +1176,7 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
         sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
 			symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
-        printf("*ERROR in steadystate: the HeterSolver library is not linked\n\n");
+        printf("*ERROR in steadystate: the HeteroSolver library is not linked\n\n");
         FORTRAN(stop,());
 #endif
       }
@@ -2647,7 +2647,7 @@ void steadystate(double **cop,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,ITG 
         sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
 			symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
-        printf("*ERROR in steadystate: the HeterSolver library is not linked\n\n");
+        printf("*ERROR in steadystate: the HeteroSolver library is not linked\n\n");
         FORTRAN(stop,());
 #endif
       }

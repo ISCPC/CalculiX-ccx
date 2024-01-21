@@ -273,7 +273,7 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
       sxat_ve_factor(add, aud, adbd, aubd, sigma, icold, irowd, *ndesibou, nzsd,
           symmetryflag, inputformat, jqd, nzsd, SOLVER_TYPE_HS);
 #else
-      printf("*ERROR in randomfieldmain: the HeterSolver library is not linked\n\n");
+      printf("*ERROR in randomfieldmain: the HeteroSolver library is not linked\n\n");
       FORTRAN(stop,());
 #endif
     }
@@ -486,7 +486,7 @@ void randomfieldmain(ITG *kon,ITG *ipkon,char *lakon,ITG *ne,ITG *nmpc,
     sxat_ve_factor(ad, au, adb, aub, trace, icols, irows, *ndesi, nzss,
                        symmetryflag, inputformat, jqs, nzss, SOLVER_TYPE_HS);
 #else
-    printf("*ERROR in randomfieldmain: the HeterSolver library is not linked\n\n");
+    printf("*ERROR in randomfieldmain: the HeteroSolver library is not linked\n\n");
     FORTRAN(stop,());
 #endif
   }

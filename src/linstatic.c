@@ -791,7 +791,7 @@ void linstatic(double *co,ITG *nk,ITG **konp,ITG **ipkonp,char **lakonp,
       sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
                  symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
-      printf("*ERROR in linstatic: the HeterSolver library is not linked\n\n");
+      printf("*ERROR in linstatic: the HeteroSolver library is not linked\n\n");
       FORTRAN(stop,());
 #endif
     }

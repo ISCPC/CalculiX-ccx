@@ -297,10 +297,13 @@ void arpackbu(double *co, ITG *nk, ITG *kon, ITG *ipkon, char *lakon,
   buckling=1;rhsi=0;
 
   sigma=0.;
+#ifndef SX_AURORA /* removed for SX-AURORA VE solver support */
   if(*isolver>9){
     storematrix=1;
     *isolver-=10;
   }
+#endif
+  TIMELOG_START(tl);
   if(*isolver==0){
 #ifdef SPOOLES
     spooles(ad,au,adb,aub,&sigma,b,icol,irow,&neq[0],&nzs[0],&symmetryflag,
@@ -350,7 +353,7 @@ else if(*isolver==11){
     sxat_ve_main(ad, au, adb, aub, sigma, b, icol, irow, neq[0], nzs[0],
                symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
-    printf("*ERROR in arpackbu: the HeterSolver library is not linked\n\n");
+    printf("*ERROR in arpackbu: the HeteroSolver library is not linked\n\n");
     FORTRAN(stop,());
 #endif
   }
@@ -599,7 +602,7 @@ else if(*isolver==11){
       sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[0], nzs[0],
                    symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
-      printf("*ERROR in arpack: the HeterSolver library is not linked\n\n");
+      printf("*ERROR in arpack: the HeteroSolver library is not linked\n\n");
       FORTRAN(stop,());
 #endif
     }

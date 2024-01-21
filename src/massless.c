@@ -154,6 +154,12 @@ void massless(ITG *kslav,ITG *lslav,ITG *ktot,ITG *ltot,double *au,double *ad,
      of a linear calculation */
 
   if((*masslesslinear==0)||(*iinc==1)){
+#ifdef SX_AURORA
+    if((*isolver==11)||(*isolver==12)){
+      printf("*NOTICE in massless: Use PARDISO instead of vesolver\n\n");
+      *isolver=7;
+    }
+#endif
     TIMELOG_START(tl);
     if(*isolver==0){
 #ifdef SPOOLES
@@ -184,10 +190,10 @@ void massless(ITG *kslav,ITG *lslav,ITG *ktot,ITG *ltot,double *au,double *ad,
 #endif
     }else if(*isolver==11){
 #ifdef SX_AURORA
-      printf("*ERROR in massless: the HeterSolver library is not supported\n\n");
+      printf("*ERROR in massless: the HeteroSolver library is not supported\n\n");
       FORTRAN(stop,());
 #else
-      printf("*ERROR in massless: the HeterSolver library is not linked\n\n");
+      printf("*ERROR in massless: the HeteroSolver library is not linked\n\n");
       FORTRAN(stop,());
 #endif
     }else if(*isolver==12){

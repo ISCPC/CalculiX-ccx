@@ -646,7 +646,7 @@ void arpack(double *co, ITG *nk, ITG **konp, ITG **ipkonp, char **lakonp,
     sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
                        symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
-    printf("*ERROR in arpack: the HeterSolver library is not linked\n\n");
+    printf("*ERROR in arpack: the HeteroSolver library is not linked\n\n");
     FORTRAN(stop,());
 #endif
   }

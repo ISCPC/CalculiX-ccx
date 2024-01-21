@@ -159,7 +159,7 @@ void dudsmain(ITG *isolver,double *au,double *ad,double *aub,double*adb,
        sxat_ve_factor(ad, au, adb, aub, sigma, icol, irow, neq[1], nzs[1],
                    symmetryflag, inputformat, jq, nzs[2], SOLVER_TYPE_HS);
 #else
-       printf("*ERROR in dudsmain: the HeterSolver library is not linked\n\n");
+       printf("*ERROR in dudsmain: the HeteroSolver library is not linked\n\n");
        FORTRAN(stop,());
 #endif
    }
